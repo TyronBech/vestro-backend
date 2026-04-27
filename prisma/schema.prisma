@@ -10,20 +10,20 @@ datasource db {
 // 1. USER & SECURITY MODULE
 // -----------------------------------------------------------------------------
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  firstName      String
-  middleName     String?
-  lastName       String
-  suffix         String?
-  avatarUrl      String?
-  currency       String   @default("PHP")
+  id         String  @id @default(uuid())
+  email      String  @unique
+  firstName  String
+  middleName String?
+  lastName   String
+  suffix     String?
+  avatarUrl  String?
+  currency   String  @default("PHP")
 
   // Security & Session State (Supporting the 15-min lock and Panic Mode)
-  biometricsEnabled Boolean   @default(false)
-  panicModeEnabled  Boolean   @default(false)
-  panicModePin      String?   // Hashed for security
-  lastActiveAt      DateTime  @default(now())
+  biometricsEnabled Boolean  @default(false)
+  panicModeEnabled  Boolean  @default(false)
+  panicModePin      String? // Hashed for security
+  lastActiveAt      DateTime @default(now())
 
   // Audit
   createdAt DateTime  @default(now())
@@ -35,6 +35,7 @@ model User {
   goals         Goal[]
   categories    Category[]
   notifications Notification[]
+  accounts      Account[]
 
   @@map("users")
 }
@@ -43,40 +44,44 @@ model User {
 // 2. DYNAMIC TRANSACTION MODULE (The Unified Ledger)
 // -----------------------------------------------------------------------------
 model Transaction {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title     String   // E.g., "7-Eleven Coffee" or "Salary"
-  amount    Int      // CRITICAL: Stored in Cents (e.g., ₱182.00 = 18200)
-  
+  title  String // E.g., "7-Eleven Coffee" or "Salary"
+  amount Int // CRITICAL: Stored in Cents (e.g., ₱182.00 = 18200)
+
   // High-level movement logic
-  flow      TransactionFlow // INFLOW, OUTFLOW, or NEUTRAL
-  type      TransactionType // INCOME, EXPENSE, SAVINGS, or INVESTMENT
+  flow TransactionFlow // INFLOW, OUTFLOW, or NEUTRAL
+  type TransactionType // INCOME, EXPENSE, SAVINGS, or INVESTMENT
 
   // Category Link
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
   // Goal Link (Required if type is SAVINGS)
-  goalId    String?
-  goal      Goal?    @relation(fields: [goalId], references: [id])
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id])
+
+  // Account Link
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
 
   // Flex field for Investment details (Asset type, ROI, Platform)
-  metadata  Json?    
+  metadata Json?
 
-  date      DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  date      DateTime  @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@map("transactions")
 }
 
 enum TransactionFlow {
-  INFLOW   // Money coming in (Wallet goes up)
-  OUTFLOW  // Money leaving (Wallet goes down)
-  NEUTRAL  // Money shifting (e.g., Wallet to Savings/Investment)
+  INFLOW // Money coming in (Wallet goes up)
+  OUTFLOW // Money leaving (Wallet goes down)
+  NEUTRAL // Money shifting (e.g., Wallet to Savings/Investment)
 }
 
 enum TransactionType {
@@ -90,14 +95,14 @@ enum TransactionType {
 // 3. CATEGORY MODULE (Dynamic Taxonomy)
 // -----------------------------------------------------------------------------
 model Category {
-  id        String   @id @default(uuid())
-  userId    String?  // Null for global defaults; ID for user-created
-  user      User?    @relation(fields: [userId], references: [id])
+  id     String  @id @default(uuid())
+  userId String? // Null for global defaults; ID for user-created
+  user   User?   @relation(fields: [userId], references: [id])
 
-  name      String   // E.g., "Food", "Crypto", "XSR155 Fund"
-  icon      String   // Lucide icon name
-  color     String   // Hex code (Follows #373737 or #ee4e43)
-  type      TransactionType
+  name  String // E.g., "Food", "Crypto", "XSR155 Fund"
+  icon  String // Lucide icon name
+  color String // Hex code (Follows #373737 or #ee4e43)
+  type  TransactionType
 
   transactions Transaction[]
 
@@ -113,8 +118,8 @@ model Goal {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title         String
-  targetAmount  Int        // Target in Cents (e.g., 18200000)
-  currentAmount Int        @default(0) 
+  targetAmount  Int // Target in Cents (e.g., 18200000)
+  currentAmount Int        @default(0)
   deadline      DateTime?
   status        GoalStatus @default(IN_PROGRESS)
 
@@ -141,10 +146,10 @@ model Notification {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
-  type      NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+  type    NotificationType
 
   createdAt DateTime @default(now())
 
@@ -153,6 +158,36 @@ model Notification {
 
 enum NotificationType {
   GOAL_UPDATE
-  SECURITY_ALERT 
+  SECURITY_ALERT
   SYSTEM
+}
+
+// -----------------------------------------------------------------------------
+// 6. BANK ACCOUNTS MODULE
+// -----------------------------------------------------------------------------
+
+enum AccountType {
+  CASH
+  DEBIT_CARD
+  CREDIT_CARD
+  E_WALLET
+}
+
+model Account {
+  id      String      @id @default(uuid())
+  name    String
+  type    AccountType
+  iconURL String?
+
+  balance Int @default(0)
+
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("accounts")
 }
