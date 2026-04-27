@@ -1,12 +1,20 @@
 import { z } from 'zod';
-import { supabase } from '../config/supabase';
+import { PrismaClient, TransactionFlow, TransactionType } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-// Transaction validation schema
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
+// Transaction validation schema aligned with the Prisma schema
 export const TransactionSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   amount: z.number().positive('Amount must be positive'),
-  type: z.enum(['income', 'expense']),
-  profileId: z.string().uuid('Invalid profile ID'),
+  flow: z.nativeEnum(TransactionFlow),
+  type: z.nativeEnum(TransactionType),
+  userId: z.string().uuid('Invalid user ID'),
+  categoryId: z.string().uuid('Invalid category ID'),
   goalId: z.string().uuid('Invalid goal ID').optional().nullable(),
 });
 
@@ -15,6 +23,7 @@ export type TransactionInput = z.infer<typeof TransactionSchema>;
 export class TransactionService {
   /**
    * Adds a new transaction, applying Flat Minimalism logic: simple, direct, error-proof.
+   * The insert and optional goal-progress update are executed in a single atomic DB transaction.
    * @param input Raw transaction data
    * @returns Created transaction record
    */
@@ -26,53 +35,30 @@ export class TransactionService {
     // 2. Convert decimal input to cents (integers) to avoid floating-point errors
     const amountInCents = Math.round(validated.amount * 100);
 
-    // Prepare transaction data following database schema (with soft-deletes)
-    const transactionData = {
-      title: validated.title,
-      amount: amountInCents,
-      type: validated.type,
-      profile_id: validated.profileId,
-      goal_id: validated.goalId || null,
-      deleted_at: null, // Soft-deletes support
-    };
+    // 3. Insert + goal update atomically so they both succeed or both roll back
+    return prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.create({
+        data: {
+          userId: validated.userId,
+          title: validated.title,
+          amount: amountInCents,
+          flow: validated.flow,
+          type: validated.type,
+          categoryId: validated.categoryId,
+          goalId: validated.goalId ?? null,
+        },
+      });
 
-    // Insert transaction into the database
-    const { data: transaction, error: txError } = await supabase
-      .from('transactions')
-      .insert(transactionData)
-      .select()
-      .single();
-
-    if (txError) {
-      throw new Error(`Failed to add transaction: ${txError.message}`);
-    }
-
-    // 3. If the transaction is linked to a goalId, increment current_amount in goals table
-    if (validated.goalId) {
-      // Simple read-modify-write for goal progress
-      const { data: goal, error: fetchError } = await supabase
-        .from('goals')
-        .select('current_amount')
-        .eq('id', validated.goalId)
-        .is('deleted_at', null)
-        .single();
-
-      if (fetchError) {
-        throw new Error(`Failed to fetch linked goal: ${fetchError.message}`);
+      // 4. If linked to a goal, atomically increment currentAmount
+      if (validated.goalId) {
+        await tx.goal.update({
+          where: { id: validated.goalId },
+          data: { currentAmount: { increment: amountInCents } },
+        });
       }
 
-      const newAmount = (goal.current_amount || 0) + amountInCents;
-
-      const { error: updateError } = await supabase
-        .from('goals')
-        .update({ current_amount: newAmount })
-        .eq('id', validated.goalId);
-
-      if (updateError) {
-        throw new Error(`Failed to update goal progress: ${updateError.message}`);
-      }
-    }
-
-    return transaction;
+      return transaction;
+    });
   }
 }
+
