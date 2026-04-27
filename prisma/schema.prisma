@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -----------------------------------------------------------------------------
+// 1. USER & SECURITY MODULE
+// -----------------------------------------------------------------------------
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  firstName      String
+  middleName     String?
+  lastName       String
+  suffix         String?
+  avatarUrl      String?
+  currency       String   @default("PHP")
+
+  // Security & Session State (Supporting the 15-min lock and Panic Mode)
+  biometricsEnabled Boolean   @default(false)
+  panicModeEnabled  Boolean   @default(false)
+  panicModePin      String?   // Hashed for security
+  lastActiveAt      DateTime  @default(now())
+
+  // Audit
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // For soft-deletes
+
+  // Relations
+  transactions  Transaction[]
+  goals         Goal[]
+  categories    Category[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// 2. DYNAMIC TRANSACTION MODULE (The Unified Ledger)
+// -----------------------------------------------------------------------------
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String   // E.g., "7-Eleven Coffee" or "Salary"
+  amount    Int      // CRITICAL: Stored in Cents (e.g., ₱182.00 = 18200)
+  
+  // High-level movement logic
+  flow      TransactionFlow // INFLOW, OUTFLOW, or NEUTRAL
+  type      TransactionType // INCOME, EXPENSE, SAVINGS, or INVESTMENT
+
+  // Category Link
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  // Goal Link (Required if type is SAVINGS)
+  goalId    String?
+  goal      Goal?    @relation(fields: [goalId], references: [id])
+
+  // Flex field for Investment details (Asset type, ROI, Platform)
+  metadata  Json?    
+
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("transactions")
+}
+
+enum TransactionFlow {
+  INFLOW   // Money coming in (Wallet goes up)
+  OUTFLOW  // Money leaving (Wallet goes down)
+  NEUTRAL  // Money shifting (e.g., Wallet to Savings/Investment)
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  SAVINGS
+  INVESTMENT
+}
+
+// -----------------------------------------------------------------------------
+// 3. CATEGORY MODULE (Dynamic Taxonomy)
+// -----------------------------------------------------------------------------
+model Category {
+  id        String   @id @default(uuid())
+  userId    String?  // Null for global defaults; ID for user-created
+  user      User?    @relation(fields: [userId], references: [id])
+
+  name      String   // E.g., "Food", "Crypto", "XSR155 Fund"
+  icon      String   // Lucide icon name
+  color     String   // Hex code (Follows #373737 or #ee4e43)
+  type      TransactionType
+
+  transactions Transaction[]
+
+  @@map("categories")
+}
+
+// -----------------------------------------------------------------------------
+// 4. GOALS MODULE (The XSR155 Tracker)
+// -----------------------------------------------------------------------------
+model Goal {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title         String
+  targetAmount  Int        // Target in Cents (e.g., 18200000)
+  currentAmount Int        @default(0) 
+  deadline      DateTime?
+  status        GoalStatus @default(IN_PROGRESS)
+
+  transactions Transaction[] // History of savings linked to this goal
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("goals")
+}
+
+enum GoalStatus {
+  IN_PROGRESS
+  ACHIEVED
+  CANCELLED
+}
+
+// -----------------------------------------------------------------------------
+// 5. NOTIFICATION MODULE
+// -----------------------------------------------------------------------------
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  type      NotificationType
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  GOAL_UPDATE
+  SECURITY_ALERT 
+  SYSTEM
+}
