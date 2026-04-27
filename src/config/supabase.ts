@@ -11,4 +11,8 @@ if (!supabaseKey?.trim()) {
   throw new Error('Missing required environment variable: SUPABASE_SERVICE_KEY');
 }
 
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase URL or Key in environment variables.');
+}
+
 export const supabase = createClient(supabaseUrl, supabaseKey);
