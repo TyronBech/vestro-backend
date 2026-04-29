@@ -1,22 +1,16 @@
 import { z } from 'zod';
-import { PrismaClient, TransactionFlow, TransactionType } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { env } from '../config/env'
-
-const pool = new Pool({ connectionString: env.DIRECT_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { TransactionFlow, TransactionType } from '@prisma/client';
+import { prisma } from '../infrastructure/db/prisma.client';
 
 // Transaction validation schema aligned with the Prisma schema
 export const TransactionSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   amount: z.number().positive('Amount must be positive'),
-  flow: z.nativeEnum(TransactionFlow),
-  type: z.nativeEnum(TransactionType),
-  userId: z.string().uuid('Invalid user ID'),
-  categoryId: z.string().uuid('Invalid category ID'),
-  goalId: z.string().uuid('Invalid goal ID').optional().nullable(),
+  flow: z.enum(TransactionFlow),
+  type: z.enum(TransactionType),
+  userId: z.uuid('Invalid user ID'),
+  categoryId: z.uuid('Invalid category ID'),
+  goalId: z.uuid('Invalid goal ID').optional().nullable(),
 });
 
 export type TransactionInput = z.infer<typeof TransactionSchema>;
