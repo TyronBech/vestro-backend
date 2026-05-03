@@ -1,8 +1,13 @@
-import { Router } from "express";
-import { getProfileController } from "../controllers/profile.controller";
+import { Router } from 'express';
+import { ProfileController } from '../controllers/profile.controller';
+import { authenticateJWT } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validate';
+import { updateProfileSchema } from '../schemas/user.schema';
 
-const profileRouter = Router();
+export const profileRouter = Router();
 
-profileRouter.get("/profile", getProfileController);
+// GET /profile — fetch the authenticated user's own profile
+profileRouter.get('/profile', authenticateJWT, ProfileController.getProfile);
 
-export { profileRouter };
+// PATCH /profile — partial update: name, avatar, currency, security toggles
+profileRouter.patch('/profile', authenticateJWT, validate(updateProfileSchema), ProfileController.updateProfile);

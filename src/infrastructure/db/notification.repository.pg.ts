@@ -14,6 +14,12 @@ export class NotificationRepositoryPg extends BaseRepositoryPg<Notification, Cre
     });
   }
 
+  async findByUserIdAndId(userId: string, notificationId: string): Promise<Notification | null> {
+    return this.db.notification.findFirst({
+      where: { id: notificationId, userId },
+    });
+  }
+
   async markAsRead(id: string): Promise<Notification> {
     return this.db.notification.update({
       where: { id },

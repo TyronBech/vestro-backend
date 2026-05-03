@@ -6,5 +6,6 @@ export type UpdateNotificationDto = Prisma.NotificationUpdateInput;
 
 export interface INotificationRepository extends IBaseRepository<Notification, CreateNotificationDto, UpdateNotificationDto> {
   findByUserId(userId: string): Promise<Notification[]>;
+  findByUserIdAndId(userId: string, notificationId: string): Promise<Notification | null>;
   markAsRead(id: string): Promise<Notification>;
 }

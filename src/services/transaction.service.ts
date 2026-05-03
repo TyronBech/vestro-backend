@@ -1,59 +1,48 @@
-import { z } from 'zod';
-import { TransactionFlow, TransactionType } from '@prisma/client';
-import { prisma } from '../infrastructure/db/prisma.client';
+import { Result, ok, err } from '../utils/result';
+import { TransactionRepositoryPg } from '../infrastructure/db/transaction.repository.pg';
+import { CreateTransactionInput } from '../presentation/schemas/transaction.schema';
 
-// Transaction validation schema aligned with the Prisma schema
-export const TransactionSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  amount: z.number().positive('Amount must be positive'),
-  flow: z.enum(TransactionFlow),
-  type: z.enum(TransactionType),
-  userId: z.uuid('Invalid user ID'),
-  categoryId: z.uuid('Invalid category ID'),
-  goalId: z.uuid('Invalid goal ID').optional().nullable(),
-});
+export type TransactionInput = CreateTransactionInput['body'] & { userId: string };
 
-export type TransactionInput = z.infer<typeof TransactionSchema>;
+const transactionRepo = new TransactionRepositoryPg();
 
 export class TransactionService {
   /**
-   * Adds a new transaction, applying Flat Minimalism logic: simple, direct, error-proof.
-   * The insert and optional goal-progress update are executed in a single atomic DB transaction.
-   * @param input Raw transaction data
-   * @returns Created transaction record
+   * Adds a new transaction atomically.
+   * Validation is handled upstream by the `validate` middleware — input is pre-typed here.
+   * Amount is stored as integer cents to avoid floating-point errors.
+   * @param input Validated transaction data with userId injected from JWT
    */
-  static async addTransaction(input: unknown) {
-    // 1. Validate inputs via TransactionSchema
-    // Any validation failure throws a ZodError which can trigger Haptics on the client
-    const validated = TransactionSchema.parse(input);
+  static async addTransaction(input: TransactionInput): Promise<Result<any, 'DB_ERROR'>> {
+    try {
+      const amountInCents = Math.round(input.amount * 100);
 
-    // 2. Convert decimal input to cents (integers) to avoid floating-point errors
-    const amountInCents = Math.round(validated.amount * 100);
-
-    // 3. Insert + goal update atomically so they both succeed or both roll back
-    return prisma.$transaction(async (tx) => {
-      const transaction = await tx.transaction.create({
-        data: {
-          userId: validated.userId,
-          title: validated.title,
-          amount: amountInCents,
-          flow: validated.flow,
-          type: validated.type,
-          categoryId: validated.categoryId,
-          goalId: validated.goalId ?? null,
-        },
+      const transaction = await transactionRepo.createWithGoalUpdate({
+        userId: input.userId,
+        title: input.title,
+        amount: amountInCents,
+        flow: input.flow,
+        type: input.type,
+        categoryId: input.categoryId,
+        goalId: input.goalId ?? null,
       });
 
-      // 4. If linked to a goal, atomically increment currentAmount
-      if (validated.goalId) {
-        await tx.goal.update({
-          where: { id: validated.goalId },
-          data: { currentAmount: { increment: amountInCents } },
-        });
-      }
+      return ok(transaction);
+    } catch {
+      return err('DB_ERROR');
+    }
+  }
 
-      return transaction;
-    });
+  /**
+   * Returns all transactions for a given user, ordered newest first.
+   * @param userId Authenticated user's ID from JWT
+   */
+  static async listTransactions(userId: string): Promise<Result<any[], 'DB_ERROR'>> {
+    try {
+      const transactions = await transactionRepo.findByUserIdWithRelations(userId);
+      return ok(transactions);
+    } catch {
+      return err('DB_ERROR');
+    }
   }
 }
-
