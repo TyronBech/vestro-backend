@@ -1,4 +1,4 @@
-import { User } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 import { BaseRepositoryPg } from './base.repository.pg';
 import { IUserRepository, CreateUserDto, UpdateUserDto } from '../../domain/user/user.repository';
 
@@ -11,5 +11,15 @@ export class UserRepositoryPg extends BaseRepositoryPg<User, CreateUserDto, Upda
     return this.db.user.findUnique({
       where: { email },
     });
+  }
+
+  async findByIdSelect<T extends Prisma.UserSelect>(
+    id: string,
+    select: T,
+  ): Promise<Prisma.UserGetPayload<{ select: T }> | null> {
+    return this.db.user.findUnique({
+      where: { id },
+      select,
+    }) as any;
   }
 }
