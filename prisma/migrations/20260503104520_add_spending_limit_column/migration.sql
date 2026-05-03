@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "spendingLimit" INTEGER NOT NULL DEFAULT 5000000;

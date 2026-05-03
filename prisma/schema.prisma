@@ -18,11 +18,16 @@ model User {
   suffix     String?
   avatarUrl  String?
   currency   String  @default("PHP")
+  spendingLimit Int @default(5000000)
 
   // Security & Session State (Supporting the 15-min lock and Panic Mode)
+  passwordHash      String?  // For email/password auth; null for OAuth-only users
+  twoFactorSecret   String?  // For Google Authenticator (TOTP)
+  twoFactorEnabled  Boolean  @default(false)
   biometricsEnabled Boolean  @default(false)
+  biometricKeyHash  String?  // Hashed token stored in expo-secure-store on device
   panicModeEnabled  Boolean  @default(false)
-  panicModePin      String? // Hashed for security
+  panicModePin      String?  // Hashed for security
   lastActiveAt      DateTime @default(now())
 
   // Audit
