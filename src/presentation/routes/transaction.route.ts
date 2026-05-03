@@ -6,5 +6,5 @@ import { CreateTransactionSchema } from '../schemas/transaction.schema';
 
 export const transactionRouter = Router();
 
-transactionRouter.post('/transactions', authenticateJWT, validate(CreateTransactionSchema), TransactionController.addTransaction);
-transactionRouter.get('/transactions', authenticateJWT, TransactionController.listTransactions);
+transactionRouter.post('/', authenticateJWT, validate(CreateTransactionSchema), TransactionController.addTransaction);
+transactionRouter.get('/', authenticateJWT, TransactionController.listTransactions);

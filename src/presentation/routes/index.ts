@@ -10,24 +10,24 @@ import { notificationRouter } from "./notification.route";
 const apiRouter = Router();
 
 // 1. Auth (Login, Register, Refresh)
-apiRouter.use('/api/auth', authRouter);
+apiRouter.use('/auth', authRouter);
 
 // 2. Profile & User Settings
-apiRouter.use('/api/profile', profileRouter);
+apiRouter.use('/profile', profileRouter);
 
 // 3. Transactions (CRUD)
-apiRouter.use('/api/transactions', transactionRouter);
+apiRouter.use('/transactions', transactionRouter);
 
 // 4. Goals (Savings & Purchases)
-apiRouter.use('/api/goals', goalRouter);
+apiRouter.use('/goals', goalRouter);
 
 // 5. Dashboard (Home Screen Data)
-apiRouter.use('/api/dashboard', dashboardRouter);
+apiRouter.use('/dashboard', dashboardRouter);
 
 // 6. Analytics (Reports & Charts)
-apiRouter.use('/api/analytics', analyticsRouter);
+apiRouter.use('/analytics', analyticsRouter);
 
 // 7. Notifications (Bell Icon)
-apiRouter.use('/api/notifications', notificationRouter);
+apiRouter.use('/notifications', notificationRouter);
 
 export { apiRouter };
