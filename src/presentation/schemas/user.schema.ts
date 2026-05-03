@@ -24,24 +24,20 @@ export const updateProfileSchema = z.object({
       .max(10, "Suffix is too long")
       .nullable()
       .optional(),
-      
-    // Zod has a built-in .url() checker! It will reject "my-cool-picture.jpg"
-    // and only accept "https://example.com/my-cool-picture.jpg"
-    avatarUrl: z.string()
-      .url("Avatar must be a valid image URL")
-      .optional(),
-      
-    currency: z.string()
-      .length(3, "Currency must be a 3-letter code (e.g., PHP)")
-      .optional(),
-      
-    // Booleans for your security toggles
+
+    avatarUrl: z.url("Avatar must be a valid image URL").optional(),
+
+    currency: z.string().length(3, "Currency must be a 3-letter code (e.g., PHP)").optional(),
+    spendingLimit: z.number().optional(),
+
+    passwordHash: z.string().optional(),
+    twoFactorSecret: z.string().optional(),
+    twoFactorEnabled: z.boolean().optional(),
+    biometricKeyHash: z.string().optional(),
     biometricsEnabled: z.boolean().optional(),
     panicModeEnabled: z.boolean().optional(),
   })
-  // .strict() ensures the user can't send random data like { "hackerField": true }
-  .strict() 
+  .strict()
 });
 
-// Extract the TypeScript type for your controller
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>['body'];
