@@ -6,5 +6,5 @@ import { createGoalSchema } from '../schemas/goal.schema';
 
 export const goalRouter = Router();
 
-goalRouter.post('/goals', authenticateJWT, validate(createGoalSchema), GoalController.createGoal);
-goalRouter.get('/goals', authenticateJWT, GoalController.listGoals);
+goalRouter.post('/', authenticateJWT, validate(createGoalSchema), GoalController.createGoal);
+goalRouter.get('/', authenticateJWT, GoalController.listGoals);

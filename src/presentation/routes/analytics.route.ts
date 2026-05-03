@@ -6,4 +6,4 @@ import { analyticsFilterSchema } from '../schemas/analytics.schema';
 
 export const analyticsRouter = Router();
 
-analyticsRouter.get('/analytics', authenticateJWT, validate(analyticsFilterSchema), AnalyticsController.getReport);
+analyticsRouter.get('/', authenticateJWT, validate(analyticsFilterSchema), AnalyticsController.getReport);

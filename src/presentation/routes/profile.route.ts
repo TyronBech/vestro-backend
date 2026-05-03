@@ -7,7 +7,7 @@ import { updateProfileSchema } from '../schemas/user.schema';
 export const profileRouter = Router();
 
 // GET /profile — fetch the authenticated user's own profile
-profileRouter.get('/profile', authenticateJWT, ProfileController.getProfile);
+profileRouter.get('/', authenticateJWT, ProfileController.getProfile);
 
 // PATCH /profile — partial update: name, avatar, currency, security toggles
-profileRouter.patch('/profile', authenticateJWT, validate(updateProfileSchema), ProfileController.updateProfile);
+profileRouter.patch('/', authenticateJWT, validate(updateProfileSchema), ProfileController.updateProfile);

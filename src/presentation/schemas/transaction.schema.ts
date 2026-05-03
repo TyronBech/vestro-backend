@@ -25,10 +25,7 @@ export const CreateTransactionSchema = z.object({
     
     goalId: z.uuid("Invalid Goal ID format").optional(),
 
-    date: z.coerce.date({
-      message: "Invalid Date Format",
-      error: "Date is required"
-    })
+    date: z.coerce.date()
   })
 });
 
