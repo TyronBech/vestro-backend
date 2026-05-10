@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { updateProfileSchema } from '../presentation/schemas/user.schema';
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>['body'];
+import { logger } from '../utils/logger';
 
 const userRepo = new UserRepositoryPg();
 
@@ -37,11 +38,17 @@ export class ProfileService {
     userId: string,
   ): Promise<Result<any, 'USER_NOT_FOUND' | 'DB_ERROR'>> {
     try {
+      logger.info(`Executing getProfile service for userId: ${userId}`);
       const user = await userRepo.findByIdSelect(userId, PROFILE_SELECT);
 
-      if (!user) return err('USER_NOT_FOUND');
+      if (!user) {
+        logger.warn(`getProfile failed: User not found for userId: ${userId}`);
+        return err('USER_NOT_FOUND');
+      }
+      logger.info(`getProfile service completed successfully for userId: ${userId}`);
       return ok(user);
-    } catch {
+    } catch (error) {
+      logger.error(`getProfile service DB_ERROR for userId ${userId}:`, error);
       return err('DB_ERROR');
     }
   }
@@ -59,8 +66,12 @@ export class ProfileService {
     input: UpdateProfileInput,
   ): Promise<Result<any, 'USER_NOT_FOUND' | 'DB_ERROR'>> {
     try {
+      logger.info(`Executing updateProfile service for userId: ${userId}`);
       const exists = await userRepo.findByIdSelect(userId, { id: true });
-      if (!exists) return err('USER_NOT_FOUND');
+      if (!exists) {
+        logger.warn(`updateProfile failed: User not found for userId: ${userId}`);
+        return err('USER_NOT_FOUND');
+      }
 
       const updated = await userRepo.update(userId, {
         ...(input.firstName !== undefined && { firstName: input.firstName }),
@@ -76,8 +87,10 @@ export class ProfileService {
 
       // Re-fetch with safe projection to exclude any sensitive fields from the response
       const user = await userRepo.findByIdSelect(userId, PROFILE_SELECT);
+      logger.info(`updateProfile service completed successfully for userId: ${userId}`);
       return ok(user);
-    } catch {
+    } catch (error) {
+      logger.error(`updateProfile service DB_ERROR for userId ${userId}:`, error);
       return err('DB_ERROR');
     }
   }

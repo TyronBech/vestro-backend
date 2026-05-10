@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { logger } from '../../utils/logger';
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -9,6 +10,10 @@ export const authRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn(`Rate limit exceeded for user: ${req.body.email}`);
+    res.status(options.statusCode).json(options.message);
+  },
 });
 
 export const apiRateLimiter = rateLimit({
@@ -20,4 +25,8 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn(`Rate limit exceeded for user: ${req.body.email}`);
+    res.status(options.statusCode).json(options.message);
+  },
 });

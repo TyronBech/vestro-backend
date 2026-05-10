@@ -1,6 +1,7 @@
 // src/middleware/validate.ts
 import { Request, Response, NextFunction } from 'express';
 import { ZodObject, ZodError } from 'zod';
+import { logger } from '../../utils/logger';
 
 export const validate = (schema: ZodObject) => 
   (req: Request, res: Response, next: NextFunction) => {
@@ -20,6 +21,8 @@ export const validate = (schema: ZodObject) =>
           field: e.path.join('.').replace('body.', ''),
           message: e.message,
         }));
+
+        logger.warn(`Validation failed for route ${req.originalUrl}`, { errors: formattedErrors, ip: req.ip });
 
         return res.status(400).json({
           status: 'error',

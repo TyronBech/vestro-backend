@@ -3,6 +3,7 @@ import { TransactionRepositoryPg } from '../infrastructure/db/transaction.reposi
 import { CreateTransactionInput } from '../presentation/schemas/transaction.schema';
 
 export type TransactionInput = CreateTransactionInput['body'] & { userId: string };
+import { logger } from '../utils/logger';
 
 const transactionRepo = new TransactionRepositoryPg();
 
@@ -15,6 +16,7 @@ export class TransactionService {
    */
   static async addTransaction(input: TransactionInput): Promise<Result<any, 'DB_ERROR'>> {
     try {
+      logger.info(`Executing addTransaction service for userId: ${input.userId}`);
       const amountInCents = Math.round(input.amount * 100);
 
       const transaction = await transactionRepo.createWithGoalUpdate({
@@ -27,8 +29,10 @@ export class TransactionService {
         goalId: input.goalId ?? null,
       });
 
+      logger.info(`addTransaction service completed successfully for userId: ${input.userId}, transactionId: ${transaction.id}`);
       return ok(transaction);
-    } catch {
+    } catch (error) {
+      logger.error(`addTransaction service DB_ERROR for userId ${input.userId}:`, error);
       return err('DB_ERROR');
     }
   }
@@ -39,9 +43,12 @@ export class TransactionService {
    */
   static async listTransactions(userId: string): Promise<Result<any[], 'DB_ERROR'>> {
     try {
+      logger.info(`Executing listTransactions service for userId: ${userId}`);
       const transactions = await transactionRepo.findByUserIdWithRelations(userId);
+      logger.info(`listTransactions service completed successfully for userId: ${userId}, count: ${transactions.length}`);
       return ok(transactions);
-    } catch {
+    } catch (error) {
+      logger.error(`listTransactions service DB_ERROR for userId ${userId}:`, error);
       return err('DB_ERROR');
     }
   }
