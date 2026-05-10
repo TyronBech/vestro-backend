@@ -5,12 +5,14 @@ import { analyticsFilterSchema } from '../presentation/schemas/analytics.schema'
 import { z } from 'zod';
 
 export type AnalyticsFilterInput = z.infer<typeof analyticsFilterSchema>['query'];
+import { logger } from '../utils/logger';
 
 const transactionRepo = new TransactionRepositoryPg();
 
 export class AnalyticsService {
   static async getGeneralReport(userId: string, input: AnalyticsFilterInput): Promise<Result<any, 'DB_ERROR'>> {
     try {
+      logger.info(`Executing getGeneralReport service for userId: ${userId}`);
       let startDate = new Date();
       let endDate = new Date();
 
@@ -52,6 +54,7 @@ export class AnalyticsService {
         categoryBreakdown[t.categoryId]!.amount += t.amount;
       }
 
+      logger.info(`getGeneralReport service completed successfully for userId: ${userId}`);
       return ok({
         period: input.period,
         startDate,
@@ -62,7 +65,8 @@ export class AnalyticsService {
         totalInvestment,
         categoryBreakdown: Object.values(categoryBreakdown),
       });
-    } catch {
+    } catch (error) {
+      logger.error(`getGeneralReport service DB_ERROR for userId ${userId}:`, error);
       return err('DB_ERROR');
     }
   }

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { logger } from "../../utils/logger";
 
 export const errorHandler = (
   err: unknown,
@@ -6,7 +7,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ) => {
-  console.error("Unhandled API error:", err);
+  logger.error("Unhandled API error:", err);
   res.status(500).json({
     status: "error",
     message: "Internal server error.",
