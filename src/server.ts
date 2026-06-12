@@ -3,6 +3,6 @@ import { env } from "./config/env";
 
 const app = createApp();
 
-app.listen(env.PORT, () => {
-  console.log(`Vestro backend running at http://localhost:${env.PORT}`);
+app.listen(Number(env.PORT), env.HOST, () => {
+  console.log(`Vestro backend running at http://${env.HOST}:${env.PORT}`);
 });
