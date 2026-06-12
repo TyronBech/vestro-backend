@@ -14,6 +14,7 @@ async function main() {
   // 1. CLEANUP: Wipe existing data
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.bank.deleteMany();
 
   // 2. CREATE THE EXCLUSIVE USER
   const user = await prisma.user.create({
@@ -29,6 +30,23 @@ async function main() {
     },
   });
   console.log(`👤 Created User: ${user.firstName} ${user.lastName}`);
+
+  // 2.5 CREATE DEFAULT BANKS
+  console.log('🏦 Creating Default Banks...');
+  const banks = [
+    { name: 'Bank of the Philippine Islands', shortName: 'BPI', iconURL: 'bpi-logo', brandColor: '#D31115' },
+    { name: 'Banco de Oro', shortName: 'BDO', iconURL: 'bdo-logo', brandColor: '#003DA5' },
+    { name: 'GCash', shortName: 'GCash', iconURL: 'gcash-logo', brandColor: '#005CE6' },
+    { name: 'Maya', shortName: 'Maya', iconURL: 'maya-logo', brandColor: '#00E1D9' },
+    { name: 'Metropolitan Bank and Trust Company', shortName: 'Metrobank', iconURL: 'metrobank-logo', brandColor: '#002B49' },
+    { name: 'Union Bank of the Philippines', shortName: 'Unionbank', iconURL: 'unionbank-logo', brandColor: '#FF6600' },
+  ];
+
+  for (const bank of banks) {
+    await prisma.bank.create({
+      data: bank,
+    });
+  }
 
   // 3. CREATE DYNAMIC EXPENSE CATEGORIES
   // Mapping the requested categories to Lucide icons
@@ -48,7 +66,6 @@ async function main() {
   for (const cat of EXPENSE_CATEGORIES) {
     dbExpenseCategories[cat.name] = await prisma.category.create({
       data: {
-        userId: user.id,
         name: cat.name,
         icon: cat.icon,
         color: '#ee4e43', // Flat Minimalism Expense Color
@@ -59,11 +76,11 @@ async function main() {
 
   // Create standard Income and Savings categories for the ledger math
   const incomeCategory = await prisma.category.create({
-    data: { userId: user.id, name: 'Web Dev Freelance', icon: 'monitor', color: '#373737', type: TransactionType.INCOME }
+    data: { name: 'Web Dev Freelance', icon: 'monitor', color: '#373737', type: TransactionType.INCOME }
   });
 
   const savingsCategory = await prisma.category.create({
-    data: { userId: user.id, name: 'Motorcycle Fund', icon: 'wallet', color: '#373737', type: TransactionType.SAVINGS }
+    data: { name: 'Motorcycle Fund', icon: 'wallet', color: '#373737', type: TransactionType.SAVINGS }
   });
 
   // 4. CREATE THE GOAL

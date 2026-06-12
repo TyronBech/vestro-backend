@@ -8,13 +8,6 @@ export class CategoryRepositoryPg extends BaseRepositoryPg<Category, CreateCateg
   }
 
   async findByUserId(userId: string): Promise<Category[]> {
-    return this.db.category.findMany({
-      where: {
-        OR: [
-          { userId },
-          { userId: null }, // Global categories
-        ],
-      },
-    });
+    return this.db.category.findMany();
   }
 }
