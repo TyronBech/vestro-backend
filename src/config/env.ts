@@ -6,6 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
+  HOST: z.string().default('0.0.0.0'),
 
   // Database
   DATABASE_URL: z.url('DATABASE_URL is missing or invalid'),

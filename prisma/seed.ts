@@ -3,6 +3,7 @@ import { env } from '../src/config/env'
 import { PrismaClient, TransactionFlow, TransactionType, GoalStatus } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcryptjs';
 
 const pool = new Pool({ connectionString: env.DIRECT_URL });
 const adapter = new PrismaPg(pool);
@@ -17,6 +18,7 @@ async function main() {
   await prisma.bank.deleteMany();
 
   // 2. CREATE THE EXCLUSIVE USER
+  const passwordHash = await bcrypt.hash('Password123!', 10);
   const user = await prisma.user.create({
     data: {
       email: 'tyron.bechayda@vestro.app',
@@ -27,6 +29,7 @@ async function main() {
       currency: 'PHP',
       biometricsEnabled: true,
       panicModeEnabled: true,
+      passwordHash,
     },
   });
   console.log(`👤 Created User: ${user.firstName} ${user.lastName}`);
