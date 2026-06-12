@@ -38,7 +38,6 @@ model User {
   // Relations
   transactions  Transaction[]
   goals         Goal[]
-  categories    Category[]
   notifications Notification[]
   accounts      Account[]
 
@@ -61,8 +60,8 @@ model Transaction {
   type TransactionType // INCOME, EXPENSE, SAVINGS, or INVESTMENT
 
   // Category Link
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   // Goal Link (Required if type is SAVINGS)
   goalId String?
@@ -100,11 +99,8 @@ enum TransactionType {
 // 3. CATEGORY MODULE (Dynamic Taxonomy)
 // -----------------------------------------------------------------------------
 model Category {
-  id     String  @id @default(uuid())
-  userId String? // Null for global defaults; ID for user-created
-  user   User?   @relation(fields: [userId], references: [id])
-
-  name  String // E.g., "Food", "Crypto", "XSR155 Fund"
+  id    String @id @default(uuid())
+  name  String @unique // E.g., "Food", "Crypto", "XSR155 Fund"
   icon  String // Lucide icon name
   color String // Hex code (Follows #373737 or #ee4e43)
   type  TransactionType
@@ -178,13 +174,31 @@ enum AccountType {
   E_WALLET
 }
 
+model Bank {
+  id         String    @id @default(uuid())
+  name       String    @unique // E.g., "Bank of the Philippine Islands"
+  shortName  String?           // E.g., "BPI"
+  iconURL    String?           // Brand logo/icon asset path/URL
+  brandColor String?           // Flat minimalism Brand Color
+  
+  accounts   Account[]
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("banks")
+}
+
 model Account {
   id      String      @id @default(uuid())
   name    String
   type    AccountType
-  iconURL String?
 
   balance Int @default(0)
+
+  // Link to Bank
+  bankId  String?
+  bank    Bank?       @relation(fields: [bankId], references: [id], onDelete: SetNull)
 
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
