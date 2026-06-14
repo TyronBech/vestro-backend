@@ -84,6 +84,62 @@ describe('Authentication API Tests', () => {
     expect(response.body.data).toBeDefined();
   });
 
+  it('Should successfully request password reset OTP', async () => {
+    const response = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({
+        email: 'jest.test@vestro.com'
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.success).toBe(true);
+
+    const user = await prisma.user.findUnique({
+      where: { email: 'jest.test@vestro.com' }
+    });
+    expect(user?.resetPasswordToken).toBeDefined();
+    expect(user?.resetPasswordToken?.length).toBe(6);
+    expect(user?.resetPasswordExpires).toBeDefined();
+  });
+
+  it('Should fail password reset with invalid OTP', async () => {
+    const response = await request(app)
+      .post('/api/auth/reset-password')
+      .send({
+        email: 'jest.test@vestro.com',
+        otp: '000000',
+        newPassword: 'MyNewPassword123!'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0].code).toBe('INVALID_OR_EXPIRED_OTP');
+  });
+
+  it('Should successfully reset password with correct OTP', async () => {
+    const userBefore = await prisma.user.findUnique({
+      where: { email: 'jest.test@vestro.com' }
+    });
+    const correctOtp = userBefore?.resetPasswordToken!;
+
+    const response = await request(app)
+      .post('/api/auth/reset-password')
+      .send({
+        email: 'jest.test@vestro.com',
+        otp: correctOtp,
+        newPassword: 'MyNewPassword123!'
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.success).toBe(true);
+
+    const userAfter = await prisma.user.findUnique({
+      where: { email: 'jest.test@vestro.com' }
+    });
+    expect(userAfter?.passwordHash).not.toBe(userBefore?.passwordHash);
+    expect(userAfter?.resetPasswordToken).toBeNull();
+    expect(userAfter?.resetPasswordExpires).toBeNull();
+  });
+
   it('Should block brute-force attacks via the Rate Limiter', async () => {
     // 1. Fire 10 rapid-fire bad login attempts (simulating a hacker)
     for (let i = 0; i < 10; i++) {

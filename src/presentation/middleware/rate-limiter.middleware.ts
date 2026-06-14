@@ -11,7 +11,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res, next, options) => {
-    logger.warn(`Rate limit exceeded for user: ${req.body.email}`);
+    logger.warn(`Rate limit exceeded for IP: ${req.ip} (Email: ${req.body?.email || 'N/A'})`);
     res.status(options.statusCode).json(options.message);
   },
 });
@@ -26,7 +26,7 @@ export const apiRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res, next, options) => {
-    logger.warn(`Rate limit exceeded for user: ${req.body.email}`);
+    logger.warn(`Rate limit exceeded for IP: ${req.ip} (Email: ${req.body?.email || 'N/A'})`);
     res.status(options.statusCode).json(options.message);
   },
 });
