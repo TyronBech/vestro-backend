@@ -30,6 +30,10 @@ model User {
   panicModePin      String?  // Hashed for security
   lastActiveAt      DateTime @default(now())
 
+  // Password Reset OTP state
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+
   // Audit
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

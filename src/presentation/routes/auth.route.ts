@@ -3,7 +3,7 @@ import { AuthController } from '../controllers/auth.controller';
 import { authRateLimiter } from '../middleware/rate-limiter.middleware';
 import { authenticateJWT } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
-import { signupSchema, loginSchema, verify2faSchema, verifySupabaseSchema, enableBiometricsSchema, biometricLoginSchema } from '../schemas/auth.schema';
+import { signupSchema, loginSchema, verify2faSchema, verifySupabaseSchema, enableBiometricsSchema, biometricLoginSchema, forgotPasswordSchema, resetPasswordSchema } from '../schemas/auth.schema';
 
 export const authRouter = Router();
 
@@ -24,3 +24,6 @@ authRouter.post('/2fa/login', authRateLimiter, validate(verify2faSchema), AuthCo
 authRouter.post('/supabase/verify', authRateLimiter, validate(verifySupabaseSchema), AuthController.verifySupabase);
 authRouter.post('/biometrics/enable', authenticateJWT, authRateLimiter, validate(enableBiometricsSchema), AuthController.enableBiometrics);
 authRouter.post('/biometrics/login', authRateLimiter, validate(biometricLoginSchema), AuthController.biometricLogin);
+
+authRouter.post('/forgot-password', authRateLimiter, validate(forgotPasswordSchema), AuthController.forgotPassword);
+authRouter.post('/reset-password', authRateLimiter, validate(resetPasswordSchema), AuthController.resetPassword);

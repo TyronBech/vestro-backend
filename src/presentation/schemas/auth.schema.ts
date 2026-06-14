@@ -41,3 +41,19 @@ export const biometricLoginSchema = z.object({
     biometricKey: z.string().min(1, "Biometric key is required"),
   })
 });
+
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email("Invalid email address"),
+  })
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email("Invalid email address"),
+    otp: z.string().length(6, "OTP code must be 6 digits"),
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  })
+});
+
+

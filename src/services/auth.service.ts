@@ -15,6 +15,8 @@ import {
   verify2faSchema,
   verifySupabaseSchema,
   biometricLoginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../presentation/schemas/auth.schema';
 
 const JWT_SECRET = env.JWT_SECRET;
@@ -262,6 +264,74 @@ export class AuthService {
       return ok({ user, token });
     } catch (error) {
       logger.error(`biometricLogin service DB_ERROR for userId ${input.userId}:`, error);
+      return err('DB_ERROR');
+    }
+  }
+
+  static async forgotPassword(
+    input: z.infer<typeof forgotPasswordSchema>['body'],
+  ): Promise<Result<{ success: boolean }, 'DB_ERROR'>> {
+    try {
+      logger.info(`Executing forgotPassword service for email: ${input.email}`);
+      const user = await userRepo.findByEmail(input.email);
+      if (!user) {
+        // Log warning but return ok to prevent user enumeration
+        logger.warn(`Forgot password request for non-existent email: ${input.email}`);
+        return ok({ success: true });
+      }
+
+      // Generate a 6-digit random OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      await userRepo.update(user.id, {
+        resetPasswordToken: otp,
+        resetPasswordExpires: expires,
+      });
+
+      // Crucial: Log OTP to console for development use
+      logger.info(`[PASSWORD RESET OTP] OTP for ${input.email} is ${otp}`);
+
+      return ok({ success: true });
+    } catch (error) {
+      logger.error(`forgotPassword service DB_ERROR for email ${input.email}:`, error);
+      return err('DB_ERROR');
+    }
+  }
+
+  static async resetPassword(
+    input: z.infer<typeof resetPasswordSchema>['body'],
+  ): Promise<Result<{ success: boolean }, 'USER_NOT_FOUND' | 'INVALID_OR_EXPIRED_OTP' | 'DB_ERROR'>> {
+    try {
+      logger.info(`Executing resetPassword service for email: ${input.email}`);
+      const user = await userRepo.findByEmail(input.email);
+      if (!user) {
+        logger.warn(`resetPassword failed: User not found for email: ${input.email}`);
+        return err('USER_NOT_FOUND');
+      }
+
+      if (
+        !user.resetPasswordToken ||
+        !user.resetPasswordExpires ||
+        user.resetPasswordToken !== input.otp ||
+        user.resetPasswordExpires.getTime() < Date.now()
+      ) {
+        logger.warn(`resetPassword failed: Invalid or expired OTP for email: ${input.email}`);
+        return err('INVALID_OR_EXPIRED_OTP');
+      }
+
+      const passwordHash = await bcrypt.hash(input.newPassword, 10);
+
+      await userRepo.update(user.id, {
+        passwordHash,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      });
+
+      logger.info(`resetPassword service completed successfully for email: ${input.email}`);
+      return ok({ success: true });
+    } catch (error) {
+      logger.error(`resetPassword service DB_ERROR for email ${input.email}:`, error);
       return err('DB_ERROR');
     }
   }

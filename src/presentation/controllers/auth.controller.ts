@@ -124,4 +124,29 @@ export class AuthController {
     logger.info(`Biometric login request successful for user: ${req.body.email}`);
     res.status(200).json({ data: result.value });
   }
+
+  static async forgotPassword(req: Request, res: Response): Promise<void> {
+    logger.info(`Forgot password request received for email: ${req.body.email}`);
+    const result = await AuthService.forgotPassword(req.body);
+    if (!result.ok) {
+      logger.error(`Forgot password request failed for email: ${req.body.email}, Error: ${result.error}`);
+      res.status(500).json({ errors: [{ code: result.error, message: 'Forgot password operation failed' }] });
+      return;
+    }
+    logger.info(`Forgot password request successful for email: ${req.body.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async resetPassword(req: Request, res: Response): Promise<void> {
+    logger.info(`Reset password request received for email: ${req.body.email}`);
+    const result = await AuthService.resetPassword(req.body);
+    if (!result.ok) {
+      logger.error(`Reset password request failed for email: ${req.body.email}, Error: ${result.error}`);
+      const status = result.error === 'INVALID_OR_EXPIRED_OTP' ? 400 : 401;
+      res.status(status).json({ errors: [{ code: result.error, message: 'Reset password operation failed' }] });
+      return;
+    }
+    logger.info(`Reset password request successful for email: ${req.body.email}`);
+    res.status(200).json({ data: result.value });
+  }
 }
