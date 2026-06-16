@@ -110,11 +110,21 @@ export class AuthService {
       let user = await userRepo.findByEmail(email);
       if (!user) {
         logger.info(`Creating new user from Supabase login: ${email}`);
-        user = await userRepo.create({
-          email,
-          firstName: nameParts[0] || 'User',
-          lastName: nameParts.slice(1).join(' ') || '',
-        });
+        try {
+          user = await userRepo.create({
+            email,
+            firstName: nameParts[0] || 'User',
+            lastName: nameParts.slice(1).join(' ') || '',
+          });
+        } catch (dbError: any) {
+          if (dbError.code === 'P2002') {
+            logger.info(`Concurrent user creation detected for ${email}, retrieving existing user.`);
+            user = await userRepo.findByEmail(email);
+            if (!user) throw dbError;
+          } else {
+            throw dbError;
+          }
+        }
       }
 
       await userRepo.update(user.id, { lastActiveAt: new Date() });
