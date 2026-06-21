@@ -25,8 +25,7 @@ describe('Authentication API Tests', () => {
       .send({
         email: 'jest.test@vestro.com',
         password: 'SuperSecretPassword123!',
-        firstName: 'Automated',
-        lastName: 'Tester'
+        name: 'Automated Tester'
       });
 
     // We EXPECT a 201 Created status
@@ -45,8 +44,7 @@ describe('Authentication API Tests', () => {
       .send({
         email: 'not-an-email',
         password: 'SuperSecretPassword123!',
-        firstName: 'Automated',
-        lastName: 'Tester'
+        name: 'Automated Tester'
       });
 
     // We EXPECT the Zod middleware to block it with a 400 Bad Request

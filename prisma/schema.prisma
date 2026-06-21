@@ -88,9 +88,9 @@ model MacroAsset {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  bankName   String // "LANDBANK", "GOTYME", "UNIONBANK", "MAYA", "GCASH", "MARIBANK", "BPI"
-  purpose    String // e.g., "Emergency Fund", "Wants Sandbox", "ADV160 Fund", "Rent Reservoir"
+  bankName   String // "LANDBANK", "BPI"
+  purpose    String // e.g., "Emergency Fund", "Wants Sandbox", "Rent Reservoir"
   balance    Float    @default(0.0)
-  targetGoal Float? // Sinking fund target (e.g., 175000 for ADV160)
+  targetGoal Float? // Sinking fund target
   updatedAt  DateTime @updatedAt
 }
