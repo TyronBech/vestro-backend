@@ -27,6 +27,11 @@ const userRepo = new UserRepositoryPg();
 export class AuthService {
   // ── Email / Password ────────────────────────────────────────────────────────
 
+  /**
+   * Registers a new user with email and password.
+   * @param input Validated signup payload
+   * @returns The created user and JWT, or an error code
+   */
   static async signup(
     input: z.infer<typeof signupSchema>['body'],
   ): Promise<Result<{ user: any; token: string }, 'USER_EXISTS' | 'DB_ERROR'>> {
@@ -43,8 +48,7 @@ export class AuthService {
 
       const user = await userRepo.create({
         email: input.email,
-        firstName: input.firstName,
-        lastName: input.lastName,
+        name: input.name,
         passwordHash,
       });
 
@@ -57,6 +61,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * Authenticates a user with email and password.
+   * If 2FA is enabled, returns a requires2fa flag instead of a token.
+   * @param input Validated login payload
+   */
   static async login(
     input: z.infer<typeof loginSchema>['body'],
   ): Promise<Result<{ user?: any; token?: string; requires2fa?: boolean }, 'INVALID_CREDENTIALS' | 'DB_ERROR'>> {
@@ -76,7 +85,7 @@ export class AuthService {
 
       await userRepo.update(user.id, { lastActiveAt: new Date() });
 
-      if (user.twoFactorEnabled) {
+      if (user.is2FAEnabled) {
         logger.info(`Login service requiring 2FA for user: ${input.email}`);
         return ok({ user: { id: user.id, email: user.email }, token: '', requires2fa: true });
       }
@@ -92,6 +101,10 @@ export class AuthService {
 
   // ── Google OAuth via Supabase ────────────────────────────────────────────────
 
+  /**
+   * Verifies a Supabase OAuth token and creates/retrieves the local user.
+   * @param input Validated supabase token payload
+   */
   static async verifySupabaseLogin(
     input: z.infer<typeof verifySupabaseSchema>['body'],
   ): Promise<Result<{ user?: any; token?: string; requires2fa?: boolean }, 'INVALID_CREDENTIALS' | 'DB_ERROR'>> {
@@ -105,7 +118,7 @@ export class AuthService {
 
       const sbUser = data.user;
       const email = sbUser.email || '';
-      const nameParts = (sbUser.user_metadata?.full_name ?? '').split(' ');
+      const fullName = sbUser.user_metadata?.full_name ?? '';
 
       let user = await userRepo.findByEmail(email);
       if (!user) {
@@ -113,8 +126,7 @@ export class AuthService {
         try {
           user = await userRepo.create({
             email,
-            firstName: nameParts[0] || 'User',
-            lastName: nameParts.slice(1).join(' ') || '',
+            name: fullName || 'User',
           });
         } catch (dbError: any) {
           if (dbError.code === 'P2002') {
@@ -129,7 +141,7 @@ export class AuthService {
 
       await userRepo.update(user.id, { lastActiveAt: new Date() });
 
-      if (user.twoFactorEnabled) {
+      if (user.is2FAEnabled) {
         logger.info(`verifySupabaseLogin requiring 2FA for user: ${email}`);
         return ok({ user: { id: user.id, email: user.email }, token: '', requires2fa: true });
       }
@@ -145,6 +157,11 @@ export class AuthService {
 
   // ── Google Authenticator (TOTP / 2FA) ───────────────────────────────────────
 
+  /**
+   * Generates a new TOTP secret and otpauth URI for QR code display.
+   * Stores the secret on the user record (not yet enabled until verified).
+   * @param userId Authenticated user's ID from JWT
+   */
   static async generate2faSecret(
     userId: string,
   ): Promise<Result<{ secret: string; otpauthUrl: string }, 'USER_NOT_FOUND' | 'DB_ERROR'>> {
@@ -169,6 +186,10 @@ export class AuthService {
     }
   }
 
+  /**
+   * Verifies a TOTP token against the user's secret and enables 2FA.
+   * @param input Validated 2FA verification payload
+   */
   static async verifyAndEnable2fa(
     input: z.infer<typeof verify2faSchema>['body'],
   ): Promise<Result<boolean, 'USER_NOT_FOUND' | 'INVALID_TOKEN' | 'DB_ERROR'>> {
@@ -186,7 +207,7 @@ export class AuthService {
         return err('INVALID_TOKEN');
       }
 
-      await userRepo.update(user.id, { twoFactorEnabled: true });
+      await userRepo.update(user.id, { is2FAEnabled: true });
 
       logger.info(`verifyAndEnable2fa service completed successfully for userId: ${input.userId}`);
       return ok(true);
@@ -196,13 +217,17 @@ export class AuthService {
     }
   }
 
+  /**
+   * Completes login for a 2FA-enabled user by verifying the TOTP token.
+   * @param input Validated 2FA login payload
+   */
   static async loginWith2fa(
     input: z.infer<typeof verify2faSchema>['body'],
   ): Promise<Result<{ user: any; token: string }, 'USER_NOT_FOUND' | 'INVALID_TOKEN' | 'DB_ERROR'>> {
     try {
       logger.info(`Executing loginWith2fa service for userId: ${input.userId}`);
       const user = await userRepo.findById(input.userId);
-      if (!user || !user.twoFactorSecret || !user.twoFactorEnabled) {
+      if (!user || !user.twoFactorSecret || !user.is2FAEnabled) {
         logger.warn(`loginWith2fa failed: User not found or 2FA disabled for userId: ${input.userId}`);
         return err('USER_NOT_FOUND');
       }
@@ -226,6 +251,12 @@ export class AuthService {
 
   // ── Biometrics (Session Timeout Re-auth) ────────────────────────────────────
 
+  /**
+   * Generates a random biometric key, hashes it with bcrypt, and stores
+   * the hash on the user record. The raw key is returned once for the
+   * mobile device to store in its secure enclave (expo-secure-store).
+   * @param userId Authenticated user's ID from JWT
+   */
   static async enableBiometrics(
     userId: string,
   ): Promise<Result<{ biometricKey: string }, 'USER_NOT_FOUND' | 'DB_ERROR'>> {
@@ -250,6 +281,10 @@ export class AuthService {
     }
   }
 
+  /**
+   * Authenticates a user via biometric key comparison against the stored hash.
+   * @param input Validated biometric login payload
+   */
   static async biometricLogin(
     input: z.infer<typeof biometricLoginSchema>['body'],
   ): Promise<Result<{ user: any; token: string }, 'INVALID_CREDENTIALS' | 'DB_ERROR'>> {
@@ -269,7 +304,7 @@ export class AuthService {
 
       await userRepo.update(user.id, { lastActiveAt: new Date() });
 
-      const token = this.generateToken(user.id, user.email, user.twoFactorEnabled);
+      const token = this.generateToken(user.id, user.email, user.is2FAEnabled);
       logger.info(`biometricLogin service completed successfully for userId: ${input.userId}`);
       return ok({ user, token });
     } catch (error) {
@@ -278,6 +313,13 @@ export class AuthService {
     }
   }
 
+  // ── Password Reset ─────────────────────────────────────────────────────────
+
+  /**
+   * Generates a 6-digit OTP for password reset and stores it on the user.
+   * Returns success regardless of whether the email exists (prevents enumeration).
+   * @param input Validated forgot-password payload
+   */
   static async forgotPassword(
     input: z.infer<typeof forgotPasswordSchema>['body'],
   ): Promise<Result<{ success: boolean }, 'DB_ERROR'>> {
@@ -285,7 +327,7 @@ export class AuthService {
       logger.info(`Executing forgotPassword service for email: ${input.email}`);
       const user = await userRepo.findByEmail(input.email);
       if (!user) {
-        // Log warning but return ok to prevent user enumeration
+        // Return ok to prevent user enumeration
         logger.warn(`Forgot password request for non-existent email: ${input.email}`);
         return ok({ success: true });
       }
@@ -299,7 +341,7 @@ export class AuthService {
         resetPasswordExpires: expires,
       });
 
-      // Crucial: Log OTP to console for development use
+      // Log OTP to console for development use
       logger.info(`[PASSWORD RESET OTP] OTP for ${input.email} is ${otp}`);
 
       return ok({ success: true });
@@ -309,6 +351,10 @@ export class AuthService {
     }
   }
 
+  /**
+   * Verifies the OTP and resets the user's password.
+   * @param input Validated reset-password payload
+   */
   static async resetPassword(
     input: z.infer<typeof resetPasswordSchema>['body'],
   ): Promise<Result<{ success: boolean }, 'USER_NOT_FOUND' | 'INVALID_OR_EXPIRED_OTP' | 'DB_ERROR'>> {
@@ -348,7 +394,13 @@ export class AuthService {
 
   // ── Shared ──────────────────────────────────────────────────────────────────
 
-  private static generateToken(id: string, email: string, twoFactorVerified: boolean): string {
-    return jwt.sign({ id, email, twoFactorVerified }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  /**
+   * Generates a signed JWT with the user's identity and 2FA verification state.
+   * @param id User ID
+   * @param email User email
+   * @param is2FAVerified Whether 2FA was verified in this session
+   */
+  private static generateToken(id: string, email: string, is2FAVerified: boolean): string {
+    return jwt.sign({ id, email, is2FAVerified }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
   }
 }

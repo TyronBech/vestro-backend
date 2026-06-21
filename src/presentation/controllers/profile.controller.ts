@@ -32,8 +32,7 @@ export class ProfileController {
   /**
    * PATCH /profile
    * Partially updates the authenticated user's profile.
-   * All input is pre-validated by the `validate(updateProfileSchema)` middleware.
-   * Only send the fields you want to change — unspecified fields are left untouched.
+   * All input is pre-validated by the validate(updateProfileSchema) middleware.
    */
   static async updateProfile(req: any, res: Response): Promise<void> {
     const userId = req.user?.id;

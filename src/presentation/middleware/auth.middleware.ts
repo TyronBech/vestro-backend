@@ -10,7 +10,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    twoFactorVerified?: boolean;
+    is2FAVerified?: boolean;
   };
 }
 
@@ -39,7 +39,7 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
           {
             id: decoded.id,
             email: decoded.email,
-            twoFactorVerified: decoded.twoFactorVerified,
+            is2FAVerified: decoded.is2FAVerified,
           },
           JWT_SECRET,
           { expiresIn: JWT_EXPIRES_IN }
@@ -53,7 +53,7 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
       req.user = {
         id: decoded.id,
         email: decoded.email,
-        twoFactorVerified: decoded.twoFactorVerified,
+        is2FAVerified: decoded.is2FAVerified,
       };
 
       logger.info(`Token verification successful for user: ${decoded.email}`);
