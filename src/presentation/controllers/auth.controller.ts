@@ -71,26 +71,26 @@ export class AuthController {
   }
 
   static async loginWith2fa(req: Request, res: Response): Promise<void> {
-    logger.info(`Login with 2FA request received for user: ${req.body.email}`);
+    logger.info(`Login with 2FA request received`);
     const result = await AuthService.loginWith2fa(req.body);
     if (!result.ok) {
-      logger.error(`Failed to login with 2FA for user: ${req.body.email}, Error: ${result.error}`);
+      logger.error(`Failed to login with 2FA, Error: ${result.error}`);
       res.status(401).json({ errors: [{ code: result.error, message: 'Invalid 2FA token' }] });
       return;
     }
-    logger.info(`Login with 2FA request successful for user: ${req.body.email}`);
+    logger.info(`Login with 2FA request successful`);
     res.status(200).json({ data: result.value });
   }
 
   static async verifySupabase(req: Request, res: Response): Promise<void> {
-    logger.info(`Verify Supabase request received for user: ${req.body.email}`);
+    logger.info(`Verify Supabase request received`);
     const result = await AuthService.verifySupabaseLogin(req.body);
     if (!result.ok) {
-      logger.error(`Failed to verify Supabase for user: ${req.body.email}, Error: ${result.error}`);
+      logger.error(`Failed to verify Supabase, Error: ${result.error}`);
       res.status(401).json({ errors: [{ code: result.error, message: 'Invalid Supabase token' }] });
       return;
     }
-    logger.info(`Verify Supabase request successful for user: ${req.body.email}`);
+    logger.info(`Verify Supabase request successful`);
     res.status(200).json({ data: result.value });
   }
 
@@ -114,14 +114,14 @@ export class AuthController {
   }
 
   static async biometricLogin(req: Request, res: Response): Promise<void> {
-    logger.info(`Biometric login request received for user: ${req.body.email}`);
+    logger.info(`Biometric login request received`);
     const result = await AuthService.biometricLogin(req.body);
     if (!result.ok) {
-      logger.error(`Failed to biometric login for user: ${req.body.email}, Error: ${result.error}`);
+      logger.error(`Failed biometric login, Error: ${result.error}`);
       res.status(401).json({ errors: [{ code: result.error, message: 'Invalid biometric key' }] });
       return;
     }
-    logger.info(`Biometric login request successful for user: ${req.body.email}`);
+    logger.info(`Biometric login request successful`);
     res.status(200).json({ data: result.value });
   }
 

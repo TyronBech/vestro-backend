@@ -1,46 +1,55 @@
 import { Result, ok, err } from '../utils/result';
-import { UserRepositoryPg } from '../infrastructure/db/user.repository.pg';
-import { AccountRepositoryPg } from '../infrastructure/db/account.repository.pg';
-import { TransactionRepositoryPg } from '../infrastructure/db/transaction.repository.pg';
-import { TransactionFlow } from '@prisma/client';
+import { BudgetService } from './budget.service';
+import { CreditCardService } from './credit-card.service';
+import { MacroAssetService } from './macro-asset.service';
+import { SweepService } from './sweep.service';
 import { logger } from '../utils/logger';
 
-const userRepo = new UserRepositoryPg();
-const accountRepo = new AccountRepositoryPg();
-const transactionRepo = new TransactionRepositoryPg();
-
+/**
+ * Dashboard service — consolidated pipeline state.
+ *
+ * Returns the unified state of all three pipelines:
+ * - Pipeline A: Budget config + Payday Guillotine readiness
+ * - Pipeline B: Credit Shield status
+ * - Pipeline C: Sweep readiness
+ * - Plus: current macro asset balances
+ */
 export class DashboardService {
+  /**
+   * Fetches all pipeline states in parallel for the dashboard view.
+   * @param userId Authenticated user's ID from JWT
+   */
   static async getDashboardData(userId: string): Promise<Result<any, 'DB_ERROR'>> {
     try {
       logger.info(`Executing getDashboardData service for userId: ${userId}`);
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      // Run all independent queries in parallel — no sequential round-trips
-      const [user, accounts, transactions, recentTransactions] = await Promise.all([
-        userRepo.findByIdSelect(userId, { spendingLimit: true }),
-        accountRepo.findByUserId(userId),
-        transactionRepo.findByUserIdInDateRange(userId, firstDayOfMonth, now),
-        transactionRepo.findRecentByUserId(userId, 5),
+      // Run all independent pipeline queries in parallel
+      const [budgetResult, shieldResult, assetsResult, sweepResult] = await Promise.all([
+        BudgetService.getBudgetConfig(userId),
+        CreditCardService.getCreditShieldStatus(userId),
+        MacroAssetService.listAssets(userId),
+        SweepService.getSweepReadiness(userId),
       ]);
 
-      const availableBudget = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+      // If any pipeline fails, propagate the error
+      if (!budgetResult.ok) return err('DB_ERROR');
+      if (!shieldResult.ok) return err('DB_ERROR');
+      if (!assetsResult.ok) return err('DB_ERROR');
+      if (!sweepResult.ok) return err('DB_ERROR');
 
-      const monthlySpent = transactions
-        .filter((t: any) => t.flow === TransactionFlow.OUTFLOW)
-        .reduce((sum: number, t: any) => sum + t.amount, 0);
-
-      const monthlyIncome = transactions
-        .filter((t: any) => t.flow === TransactionFlow.INFLOW)
-        .reduce((sum: number, t: any) => sum + t.amount, 0);
+      // Compute total balance across all macro assets
+      const totalBalance = assetsResult.value.reduce(
+        (sum: number, asset: any) => sum + (asset.balance ?? 0),
+        0,
+      );
 
       logger.info(`getDashboardData service completed successfully for userId: ${userId}`);
       return ok({
-        availableBudget,
-        monthlySpent,
-        monthlyIncome,
-        monthlyLimit: user?.spendingLimit ?? 0,
-        recentTransactions,
+        budgetConfig: budgetResult.value,
+        creditShield: shieldResult.value,
+        macroAssets: assetsResult.value,
+        totalBalance,
+        sweepReadiness: sweepResult.value,
       });
     } catch (error) {
       logger.error(`getDashboardData service DB_ERROR for userId ${userId}:`, error);

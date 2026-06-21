@@ -1,216 +1,96 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
 }
 
-// -----------------------------------------------------------------------------
-// 1. USER & SECURITY MODULE
-// -----------------------------------------------------------------------------
+generator client {
+  provider = "prisma-client-js"
+}
+
 model User {
-  id         String  @id @default(uuid())
-  email      String  @unique
-  firstName  String
-  middleName String?
-  lastName   String
-  suffix     String?
-  avatarUrl  String?
-  currency   String  @default("PHP")
-  spendingLimit Int @default(5000000)
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String?
+  passwordHash String?
 
-  // Security & Session State (Supporting the 15-min lock and Panic Mode)
-  passwordHash      String?  // For email/password auth; null for OAuth-only users
-  twoFactorSecret   String?  // For Google Authenticator (TOTP)
-  twoFactorEnabled  Boolean  @default(false)
-  biometricsEnabled Boolean  @default(false)
-  biometricKeyHash  String?  // Hashed token stored in expo-secure-store on device
-  panicModeEnabled  Boolean  @default(false)
-  panicModePin      String?  // Hashed for security
-  lastActiveAt      DateTime @default(now())
+  // ── 2FA (Google Authenticator / TOTP) ──
+  twoFactorSecret String?
+  is2FAEnabled    Boolean @default(false)
 
-  // Password Reset OTP state
+  // ── Biometrics (FaceID / Fingerprint) ──
+  biometricsEnabled Boolean @default(false)
+  biometricKeyHash  String?
+
+  // ── Security Toggles ──
+  panicModeEnabled Boolean @default(false)
+  spendingLimit    Float?
+
+  // ── Password Reset ──
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
 
-  // Audit
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime? // For soft-deletes
-
-  // Relations
-  transactions  Transaction[]
-  goals         Goal[]
-  notifications Notification[]
-  accounts      Account[]
-
-  @@map("users")
-}
-
-// -----------------------------------------------------------------------------
-// 2. DYNAMIC TRANSACTION MODULE (The Unified Ledger)
-// -----------------------------------------------------------------------------
-model Transaction {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title  String // E.g., "7-Eleven Coffee" or "Salary"
-  amount Int // CRITICAL: Stored in Cents (e.g., ₱182.00 = 18200)
-
-  // High-level movement logic
-  flow TransactionFlow // INFLOW, OUTFLOW, or NEUTRAL
-  type TransactionType // INCOME, EXPENSE, SAVINGS, or INVESTMENT
-
-  // Category Link
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  // Goal Link (Required if type is SAVINGS)
-  goalId String?
-  goal   Goal?   @relation(fields: [goalId], references: [id])
-
-  // Account Link
-  accountId String?
-  account   Account? @relation(fields: [accountId], references: [id])
-
-  // Flex field for Investment details (Asset type, ROI, Platform)
-  metadata Json?
-
-  date      DateTime  @default(now())
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@map("transactions")
-}
-
-enum TransactionFlow {
-  INFLOW // Money coming in (Wallet goes up)
-  OUTFLOW // Money leaving (Wallet goes down)
-  NEUTRAL // Money shifting (e.g., Wallet to Savings/Investment)
-}
-
-enum TransactionType {
-  INCOME
-  EXPENSE
-  SAVINGS
-  INVESTMENT
-}
-
-// -----------------------------------------------------------------------------
-// 3. CATEGORY MODULE (Dynamic Taxonomy)
-// -----------------------------------------------------------------------------
-model Category {
-  id    String @id @default(uuid())
-  name  String @unique // E.g., "Food", "Crypto", "XSR155 Fund"
-  icon  String // Lucide icon name
-  color String // Hex code (Follows #373737 or #ee4e43)
-  type  TransactionType
-
-  transactions Transaction[]
-
-  @@map("categories")
-}
-
-// -----------------------------------------------------------------------------
-// 4. GOALS MODULE (The XSR155 Tracker)
-// -----------------------------------------------------------------------------
-model Goal {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title         String
-  targetAmount  Int // Target in Cents (e.g., 18200000)
-  currentAmount Int        @default(0)
-  deadline      DateTime?
-  status        GoalStatus @default(IN_PROGRESS)
-
-  transactions Transaction[] // History of savings linked to this goal
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@map("goals")
-}
-
-enum GoalStatus {
-  IN_PROGRESS
-  ACHIEVED
-  CANCELLED
-}
-
-// -----------------------------------------------------------------------------
-// 5. NOTIFICATION MODULE
-// -----------------------------------------------------------------------------
-model Notification {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title   String
-  message String
-  isRead  Boolean          @default(false)
-  type    NotificationType
+  // ── Activity Tracking ──
+  lastActiveAt DateTime?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("notifications")
+  // ── Relations to the Poverty Firewall System ──
+  budgetConfig BudgetConfig?
+  creditCards  CreditCard[]
+  sweepLogs    SweepLog[]
+  macroAssets  MacroAsset[]
 }
 
-enum NotificationType {
-  GOAL_UPDATE
-  SECURITY_ALERT
-  SYSTEM
+model BudgetConfig {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  netSalary       Float // Baseline salary (e.g., 25000)
+  needsRate       Float @default(0.50) // 50%
+  wantsRate       Float @default(0.30) // 30%
+  savingsRate     Float @default(0.10) // 10%
+  investmentsRate Float @default(0.10) // 10%
+
+  cashAmount Float // Needs: Cash Portion (rent)
+  updatedAt  DateTime @updatedAt
 }
 
-// -----------------------------------------------------------------------------
-// 6. BANK ACCOUNTS MODULE
-// -----------------------------------------------------------------------------
+model CreditCard {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-enum AccountType {
-  CASH
-  DEBIT_CARD
-  CREDIT_CARD
-  E_WALLET
+  cardName           String // e.g., "UnionBank U Card"
+  creditLimit        Float // e.g., 20000
+  statementCutoffDay Int // Day of month statement is generated (e.g., 15)
+  paymentDueDay      Int // Day of month payment is due (e.g., 5)
+  unbilledSpend      Float  @default(0.0) // Track current unbilled swiped amount
+  midCyclePaid       Float  @default(0.0) // Amount paid early to drop statement balance
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Bank {
-  id         String    @id @default(uuid())
-  name       String    @unique // E.g., "Bank of the Philippine Islands"
-  shortName  String?           // E.g., "BPI"
-  iconURL    String?           // Brand logo/icon asset path/URL
-  brandColor String?           // Flat minimalism Brand Color
-  
-  accounts   Account[]
+model SweepLog {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  @@map("banks")
+  amount      Float // Amount swept out of Wants
+  targetVault String // Bank to store the amount
+  notes       String? // e.g., "Skipped Steam sale this month"
+  sweptAt     DateTime @default(now())
 }
 
-model Account {
-  id      String      @id @default(uuid())
-  name    String
-  type    AccountType
+model MacroAsset {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  balance Int @default(0)
-
-  // Link to Bank
-  bankId  String?
-  bank    Bank?       @relation(fields: [bankId], references: [id], onDelete: SetNull)
-
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@map("accounts")
+  bankName   String // "LANDBANK", "BPI"
+  purpose    String // e.g., "Emergency Fund", "Wants Sandbox", "Rent Reservoir"
+  balance    Float    @default(0.0)
+  targetGoal Float? // Sinking fund target
+  updatedAt  DateTime @updatedAt
 }

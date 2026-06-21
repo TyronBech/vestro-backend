@@ -1,33 +1,33 @@
 import { Router } from "express";
 import { authRouter } from "./auth.route";
 import { profileRouter } from "./profile.route";
-import { transactionRouter } from "./transaction.route";
-import { goalRouter } from "./goal.route";
+import { budgetRouter } from "./budget.route";
+import { creditCardRouter } from "./credit-card.route";
+import { macroAssetRouter } from "./macro-asset.route";
+import { sweepRouter } from "./sweep.route";
 import { dashboardRouter } from "./dashboard.route";
-import { analyticsRouter } from "./analytics.route";
-import { notificationRouter } from "./notification.route";
 
 const apiRouter = Router();
 
-// 1. Auth (Login, Register, Refresh)
+// 1. Auth (Login, Register, Refresh, 2FA, Biometrics, Password Reset)
 apiRouter.use('/auth', authRouter);
 
 // 2. Profile & User Settings
 apiRouter.use('/profile', profileRouter);
 
-// 3. Transactions (CRUD)
-apiRouter.use('/transactions', transactionRouter);
+// 3. Budget Config & Payday Guillotine (Pipeline A)
+apiRouter.use('/budget', budgetRouter);
 
-// 4. Goals (Savings & Purchases)
-apiRouter.use('/goals', goalRouter);
+// 4. Credit Cards & Credit Shield (Pipeline B)
+apiRouter.use('/credit-cards', creditCardRouter);
 
-// 5. Dashboard (Home Screen Data)
+// 5. Macro Assets / Bank Buckets
+apiRouter.use('/macro-assets', macroAssetRouter);
+
+// 6. End-of-Cycle Sweep (Pipeline C)
+apiRouter.use('/sweep', sweepRouter);
+
+// 7. Dashboard (Home Screen Summary)
 apiRouter.use('/dashboard', dashboardRouter);
-
-// 6. Analytics (Reports & Charts)
-apiRouter.use('/analytics', analyticsRouter);
-
-// 7. Notifications (Bell Icon)
-apiRouter.use('/notifications', notificationRouter);
 
 export { apiRouter };
