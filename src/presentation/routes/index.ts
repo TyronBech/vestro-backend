@@ -6,6 +6,7 @@ import { creditCardRouter } from "./credit-card.route";
 import { macroAssetRouter } from "./macro-asset.route";
 import { sweepRouter } from "./sweep.route";
 import { dashboardRouter } from "./dashboard.route";
+import { coreNetworkRouter } from "./core-network.route";
 
 const apiRouter = Router();
 
@@ -29,5 +30,8 @@ apiRouter.use('/sweep', sweepRouter);
 
 // 7. Dashboard (Home Screen Summary)
 apiRouter.use('/dashboard', dashboardRouter);
+
+// 8. Core Network Routing Tree
+apiRouter.use('/core-network', coreNetworkRouter);
 
 export { apiRouter };
