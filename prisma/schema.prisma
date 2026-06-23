@@ -39,6 +39,7 @@ model User {
   creditCards  CreditCard[]
   sweepLogs    SweepLog[]
   macroAssets  MacroAsset[]
+  coreNetwork  CoreNetwork[]
 }
 
 model BudgetConfig {
@@ -93,4 +94,27 @@ model MacroAsset {
   balance    Float    @default(0.0)
   targetGoal Float? // Sinking fund target
   updatedAt  DateTime @updatedAt
+
+  coreNetworks CoreNetwork[]
+}
+
+model CoreNetwork {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  macroAssetId String
+  macroAsset   MacroAsset @relation(fields: [macroAssetId], references: [id], onDelete: Cascade)
+
+  // Self-referencing relationship for the routing tree structure
+  parentId String?
+  parent   CoreNetwork?  @relation("NetworkTree", fields: [parentId], references: [id])
+  children CoreNetwork[] @relation("NetworkTree")
+
+  name        String // e.g., "Payroll Catch", "Router Push"
+  description String?
+  percentage  Float   @default(0.0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
