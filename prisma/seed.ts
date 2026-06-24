@@ -34,9 +34,9 @@ async function main() {
   // 3. CREATE MACRO ASSETS (BANKS)
   console.log('Creating Macro Assets...');
   const banksData = [
-    { bankName: 'BPI', purpose: 'Daily Expenses', balance: 50000 },
-    { bankName: 'BDO', purpose: 'Emergency Fund', balance: 150000 },
-    { bankName: 'GCash', purpose: 'Wants Sandbox', balance: 20000 },
+    { bankName: 'Bank of the Philippine Islands', purpose: 'Daily Expenses', balance: 50000, colorCode: '#b11116', iconUrl: 'https://example.com/image1.png' },
+    { bankName: 'GCash', purpose: 'Emergency Fund', balance: 150000, colorCode: '#1972f9', iconUrl: 'https://example.com/image2.png' },
+    { bankName: 'Maya', purpose: 'Wants Sandbox', balance: 20000, colorCode: '#75eea5', iconUrl: 'https://example.com/image3.png' },
   ];
 
   for (const b of banksData) {
@@ -46,6 +46,8 @@ async function main() {
         bankName: b.bankName,
         purpose: b.purpose,
         balance: b.balance,
+        colorCode: b.colorCode,
+        iconUrl: b.iconUrl,
       },
     });
     console.log(`  Created Macro Asset: ${macroAsset.bankName}`);

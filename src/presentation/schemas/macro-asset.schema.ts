@@ -6,6 +6,8 @@ export const createMacroAssetSchema = z.object({
     purpose: z.string().min(1, "Purpose is required").max(100, "Purpose is too long"),
     balance: z.number().nonnegative("Balance must be non-negative").optional(),
     targetGoal: z.number().positive("Target goal must be positive").nullable().optional(),
+    iconUrl: z.string().url("Must be a valid URL").nullable().optional(),
+    colorCode: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code").nullable().optional(),
   })
 });
 
@@ -15,6 +17,8 @@ export const updateMacroAssetSchema = z.object({
     purpose: z.string().min(1).max(100).optional(),
     balance: z.number().nonnegative().optional(),
     targetGoal: z.number().positive().nullable().optional(),
+    iconUrl: z.string().url().nullable().optional(),
+    colorCode: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
   })
   .strict(),
   params: z.object({

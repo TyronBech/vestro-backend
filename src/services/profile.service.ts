@@ -60,6 +60,7 @@ export class ProfileService {
       await userRepo.update(userId, {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.email !== undefined && { email: input.email }),
+        ...(input.avatarUrl !== undefined && { avatarUrl: input.avatarUrl }),
         ...(input.spendingLimit !== undefined && { spendingLimit: input.spendingLimit }),
         ...(input.panicModeEnabled !== undefined && { panicModeEnabled: input.panicModeEnabled }),
       });
