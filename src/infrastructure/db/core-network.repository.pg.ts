@@ -33,4 +33,11 @@ export class CoreNetworkRepositoryPg
       orderBy: { percentage: 'desc' },
     });
   }
+
+  async updateBalance(nodeId: string, amount: number): Promise<CoreNetwork> {
+    return this.db.coreNetwork.update({
+      where: { id: nodeId },
+      data: { balance: { increment: amount } },
+    });
+  }
 }

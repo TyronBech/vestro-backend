@@ -1,6 +1,5 @@
-/// <reference types="node" />
 import { env } from '../src/config/env'
-import { PrismaClient, TransactionFlow, TransactionType, GoalStatus } from '@prisma/client';
+import { PrismaClient, CashFlowType } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
@@ -10,152 +9,108 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Starting database seed...');
 
-  // 1. CLEANUP: Wipe existing data
+  // 1. CLEANUP
+  await prisma.sweepLog.deleteMany();
+  await prisma.cashFlow.deleteMany();
+  await prisma.coreNetwork.deleteMany();
+  await prisma.macroAsset.deleteMany();
   await prisma.user.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.bank.deleteMany();
 
   // 2. CREATE THE EXCLUSIVE USER
   const passwordHash = await bcrypt.hash('Password123!', 10);
   const user = await prisma.user.create({
     data: {
       email: 'tyron.bechayda@vestro.app',
-      firstName: 'Tyron',
-      middleName: 'Panti',
-      lastName: 'Bechayda',
-      suffix: null,
-      currency: 'PHP',
+      name: 'Tyron Bechayda',
       biometricsEnabled: true,
       panicModeEnabled: true,
       passwordHash,
     },
   });
-  console.log(`👤 Created User: ${user.firstName} ${user.lastName}`);
+  console.log(`Created User: ${user.name}`);
 
-  // 2.5 CREATE DEFAULT BANKS
-  console.log('🏦 Creating Default Banks...');
-  const banks = [
-    { name: 'Bank of the Philippine Islands', shortName: 'BPI', iconURL: 'bpi-logo', brandColor: '#D31115' },
-    { name: 'Banco de Oro', shortName: 'BDO', iconURL: 'bdo-logo', brandColor: '#003DA5' },
-    { name: 'GCash', shortName: 'GCash', iconURL: 'gcash-logo', brandColor: '#005CE6' },
-    { name: 'Maya', shortName: 'Maya', iconURL: 'maya-logo', brandColor: '#00E1D9' },
-    { name: 'Metropolitan Bank and Trust Company', shortName: 'Metrobank', iconURL: 'metrobank-logo', brandColor: '#002B49' },
-    { name: 'Union Bank of the Philippines', shortName: 'Unionbank', iconURL: 'unionbank-logo', brandColor: '#FF6600' },
+  // 3. CREATE MACRO ASSETS (BANKS)
+  console.log('Creating Macro Assets...');
+  const banksData = [
+    { bankName: 'BPI', purpose: 'Daily Expenses', balance: 50000 },
+    { bankName: 'BDO', purpose: 'Emergency Fund', balance: 150000 },
+    { bankName: 'GCash', purpose: 'Wants Sandbox', balance: 20000 },
   ];
 
-  for (const bank of banks) {
-    await prisma.bank.create({
-      data: bank,
+  for (const b of banksData) {
+    const macroAsset = await prisma.macroAsset.create({
+      data: {
+        userId: user.id,
+        bankName: b.bankName,
+        purpose: b.purpose,
+        balance: b.balance,
+      },
     });
+    console.log(`  Created Macro Asset: ${macroAsset.bankName}`);
+
+    // 4. CREATE CORE NETWORKS
+    const networksData = [
+      { name: 'Income Catch', percentage: 0.5, balance: b.balance * 0.5 },
+      { name: 'Needs Router', percentage: 0.3, balance: b.balance * 0.3 },
+      { name: 'Wants Router', percentage: 0.2, balance: b.balance * 0.2 },
+    ];
+
+    for (const n of networksData) {
+      const coreNetwork = await prisma.coreNetwork.create({
+        data: {
+          userId: user.id,
+          macroAssetId: macroAsset.id,
+          name: n.name,
+          percentage: n.percentage,
+          balance: n.balance,
+        },
+      });
+      console.log(`    Created Core Network: ${coreNetwork.name}`);
+
+      // 5. CREATE CASH FLOWS (Both Inflow and Outflow)
+      const cashFlowsData = [
+        { amount: 15000, type: CashFlowType.INFLOW, notes: 'Salary Inflow' },
+        { amount: 5000, type: CashFlowType.OUTFLOW, notes: 'Utility Bill' },
+        { amount: 1500, type: CashFlowType.OUTFLOW, notes: 'Grocery' },
+      ];
+
+      for (const cf of cashFlowsData) {
+        await prisma.cashFlow.create({
+          data: {
+            userId: user.id,
+            coreNetworkId: coreNetwork.id,
+            amount: cf.amount,
+            type: cf.type,
+            notes: cf.notes,
+          },
+        });
+      }
+      console.log(`      Created 3 CashFlows for ${coreNetwork.name}`);
+    }
   }
 
-  // 3. CREATE DYNAMIC EXPENSE CATEGORIES
-  // Mapping the requested categories to Lucide icons
-  const EXPENSE_CATEGORIES = [
-    { name: 'Food', icon: 'utensils' },
-    { name: 'Transportation', icon: 'car' },
-    { name: 'Games', icon: 'gamepad-2' },
-    { name: 'Mobile', icon: 'smartphone' },
-    { name: 'Utilities', icon: 'zap' },
-    { name: 'Shopping', icon: 'shopping-bag' },
-    { name: 'Grocery', icon: 'shopping-cart' },
+  // 6. CREATE SWEEP LOGS
+  console.log('Creating Sweep Logs...');
+  const sweepLogsData = [
+    { amount: 2000, targetVault: 'High Yield Savings', notes: 'Monthly excess swept' },
+    { amount: 500, targetVault: 'Maya', notes: 'Unused wants' },
   ];
 
-  const dbExpenseCategories: Record<string, any> = {};
-
-  console.log('📂 Creating Expense Categories...');
-  for (const cat of EXPENSE_CATEGORIES) {
-    dbExpenseCategories[cat.name] = await prisma.category.create({
+  for (const sl of sweepLogsData) {
+    await prisma.sweepLog.create({
       data: {
-        name: cat.name,
-        icon: cat.icon,
-        color: '#ee4e43', // Flat Minimalism Expense Color
-        type: TransactionType.EXPENSE,
+        userId: user.id,
+        amount: sl.amount,
+        targetVault: sl.targetVault,
+        notes: sl.notes,
       },
     });
   }
+  console.log('  Created Sweep Logs');
 
-  // Create standard Income and Savings categories for the ledger math
-  const incomeCategory = await prisma.category.create({
-    data: { name: 'Web Dev Freelance', icon: 'monitor', color: '#373737', type: TransactionType.INCOME }
-  });
-
-  const savingsCategory = await prisma.category.create({
-    data: { name: 'Motorcycle Fund', icon: 'wallet', color: '#373737', type: TransactionType.SAVINGS }
-  });
-
-  // 4. CREATE THE GOAL
-  const xsrGoal = await prisma.goal.create({
-    data: {
-      userId: user.id,
-      title: 'Yamaha XSR155',
-      targetAmount: 18200000, 
-      currentAmount: 0,
-      status: GoalStatus.IN_PROGRESS,
-    },
-  });
-  console.log(`🎯 Created Goal: ${xsrGoal.title}`);
-
-  // 5. SEED TRANSACTIONS
-  
-  // A. Initial Income
-  await prisma.transaction.create({
-    data: {
-      userId: user.id,
-      title: 'Initial Project Deposit',
-      amount: 3000000, 
-      flow: TransactionFlow.INFLOW,
-      type: TransactionType.INCOME,
-      categoryId: incomeCategory.id,
-    }
-  });
-
-  // B. Standard Expenses using the new dynamic categories
-  await prisma.transaction.create({
-    data: {
-      userId: user.id,
-      title: 'Lunch',
-      amount: 25000,
-      flow: TransactionFlow.OUTFLOW,
-      type: TransactionType.EXPENSE,
-      categoryId: dbExpenseCategories['Food'].id,
-    }
-  });
-
-  await prisma.transaction.create({
-    data: {
-      userId: user.id,
-      title: 'Steam Sale',
-      amount: 85000,
-      flow: TransactionFlow.OUTFLOW,
-      type: TransactionType.EXPENSE,
-      categoryId: dbExpenseCategories['Games'].id,
-    }
-  });
-
-  // C. SAVINGS DEPOSIT
-  const savingsDeposit = await prisma.transaction.create({
-    data: {
-      userId: user.id,
-      title: 'First Bike Deposit!',
-      amount: 1000000,
-      flow: TransactionFlow.NEUTRAL,
-      type: TransactionType.SAVINGS,
-      categoryId: savingsCategory.id,
-      goalId: xsrGoal.id, 
-    }
-  });
-
-  // 6. UPDATE GOAL PROGRESS
-  await prisma.goal.update({
-    where: { id: xsrGoal.id },
-    data: { currentAmount: savingsDeposit.amount }
-  });
-
-  console.log('💸 Seeded Transactions and updated Goal progress.');
-  console.log('✅ Seeding complete!');
+  console.log('Seeding complete!');
 }
 
 main()

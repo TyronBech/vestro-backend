@@ -17,4 +17,7 @@ export interface ICoreNetworkRepository extends IBaseRepository<CoreNetwork, Cre
 
   /** Returns all root nodes (nodes without a parent) for a user. */
   findRootNodes(userId: string): Promise<CoreNetwork[]>;
+
+  /** Safely increments (or decrements if negative) the node's balance. */
+  updateBalance(nodeId: string, amount: number): Promise<CoreNetwork>;
 }

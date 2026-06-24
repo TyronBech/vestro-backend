@@ -44,7 +44,7 @@ export class MacroAssetService {
         bankName: data.bankName,
         purpose: data.purpose,
         balance: data.balance ?? 0,
-        targetGoal: data.targetGoal,
+        targetGoal: data.targetGoal ?? null,
       });
       logger.info(`addAsset service completed successfully for userId: ${userId}, assetId: ${asset.id}`);
       return ok(asset);

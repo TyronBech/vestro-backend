@@ -124,7 +124,7 @@ export class SweepService {
             userId,
             amount: sweepAmount,
             targetVault,
-            notes,
+            notes: notes ?? null,
           },
         });
 
