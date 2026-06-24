@@ -40,6 +40,7 @@ model User {
   sweepLogs    SweepLog[]
   macroAssets  MacroAsset[]
   coreNetwork  CoreNetwork[]
+  cashFlows    CashFlow[]
 }
 
 model BudgetConfig {
@@ -53,7 +54,7 @@ model BudgetConfig {
   savingsRate     Float @default(0.10) // 10%
   investmentsRate Float @default(0.10) // 10%
 
-  cashAmount Float // Needs: Cash Portion (rent)
+  cashAmount Float // Needs: Cash Portion
   updatedAt  DateTime @updatedAt
 }
 
@@ -111,10 +112,34 @@ model CoreNetwork {
   parent   CoreNetwork?  @relation("NetworkTree", fields: [parentId], references: [id])
   children CoreNetwork[] @relation("NetworkTree")
 
+
   name        String // e.g., "Payroll Catch", "Router Push"
   description String?
   percentage  Float   @default(0.0)
+  balance     Float   @default(0.0)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cashFlows CashFlow[]
+}
+
+enum CashFlowType {
+  INFLOW
+  OUTFLOW
+}
+
+model CashFlow {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coreNetworkId String
+  coreNetwork   CoreNetwork @relation(fields: [coreNetworkId], references: [id], onDelete: Cascade)
+
+  amount Float @default(0.0)
+  type CashFlowType
+  notes String? // Optional notes about the transaction
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

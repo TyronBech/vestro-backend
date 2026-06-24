@@ -7,6 +7,7 @@ import { macroAssetRouter } from "./macro-asset.route";
 import { sweepRouter } from "./sweep.route";
 import { dashboardRouter } from "./dashboard.route";
 import { coreNetworkRouter } from "./core-network.route";
+import cashFlowRouter from "./cash-flow.route";
 
 const apiRouter = Router();
 
@@ -33,5 +34,8 @@ apiRouter.use('/dashboard', dashboardRouter);
 
 // 8. Core Network Routing Tree
 apiRouter.use('/core-network', coreNetworkRouter);
+
+// 9. Cash Flows (Inflows & Outflows for Core Networks)
+apiRouter.use('/cash-flows', cashFlowRouter);
 
 export { apiRouter };
