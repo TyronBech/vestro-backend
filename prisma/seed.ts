@@ -9,7 +9,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Starting database seed...');
 
   // 1. CLEANUP
   await prisma.sweepLog.deleteMany();
@@ -29,10 +29,10 @@ async function main() {
       passwordHash,
     },
   });
-  console.log(`👤 Created User: ${user.name}`);
+  console.log(`Created User: ${user.name}`);
 
   // 3. CREATE MACRO ASSETS (BANKS)
-  console.log('🏦 Creating Macro Assets...');
+  console.log('Creating Macro Assets...');
   const banksData = [
     { bankName: 'BPI', purpose: 'Daily Expenses', balance: 50000 },
     { bankName: 'BDO', purpose: 'Emergency Fund', balance: 150000 },
@@ -92,7 +92,7 @@ async function main() {
   }
 
   // 6. CREATE SWEEP LOGS
-  console.log('🧹 Creating Sweep Logs...');
+  console.log('Creating Sweep Logs...');
   const sweepLogsData = [
     { amount: 2000, targetVault: 'High Yield Savings', notes: 'Monthly excess swept' },
     { amount: 500, targetVault: 'Maya', notes: 'Unused wants' },
@@ -110,7 +110,7 @@ async function main() {
   }
   console.log('  Created Sweep Logs');
 
-  console.log('✅ Seeding complete!');
+  console.log('Seeding complete!');
 }
 
 main()
