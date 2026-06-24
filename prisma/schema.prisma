@@ -11,6 +11,7 @@ model User {
   email        String  @unique
   name         String?
   passwordHash String?
+  avatarUrl    String?
 
   // ── 2FA (Google Authenticator / TOTP) ──
   twoFactorSecret String?
@@ -94,6 +95,8 @@ model MacroAsset {
   purpose    String // e.g., "Emergency Fund", "Wants Sandbox", "Rent Reservoir"
   balance    Float    @default(0.0)
   targetGoal Float? // Sinking fund target
+  iconUrl    String?  // The image URL
+  colorCode  String?  // Hexadecimal color code, e.g., "#b31217"
   updatedAt  DateTime @updatedAt
 
   coreNetworks CoreNetwork[]

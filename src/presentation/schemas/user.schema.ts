@@ -11,6 +11,10 @@ export const updateProfileSchema = z.object({
       .email("Must be a valid email address")
       .optional(),
 
+    avatarUrl: z.string()
+      .url("Must be a valid URL")
+      .optional(),
+
     spendingLimit: z.number()
       .nonnegative("Spending limit must be non-negative")
       .nullable()

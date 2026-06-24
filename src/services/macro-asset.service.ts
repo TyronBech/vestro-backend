@@ -35,6 +35,8 @@ export class MacroAssetService {
       purpose: string;
       balance?: number;
       targetGoal?: number;
+      iconUrl?: string | null;
+      colorCode?: string | null;
     },
   ): Promise<Result<any, 'DB_ERROR'>> {
     try {
@@ -45,6 +47,8 @@ export class MacroAssetService {
         purpose: data.purpose,
         balance: data.balance ?? 0,
         targetGoal: data.targetGoal ?? null,
+        iconUrl: data.iconUrl ?? null,
+        colorCode: data.colorCode ?? null,
       });
       logger.info(`addAsset service completed successfully for userId: ${userId}, assetId: ${asset.id}`);
       return ok(asset);
@@ -69,6 +73,8 @@ export class MacroAssetService {
       purpose?: string;
       balance?: number;
       targetGoal?: number | null;
+      iconUrl?: string | null;
+      colorCode?: string | null;
     },
   ): Promise<Result<any, 'NOT_FOUND' | 'DB_ERROR'>> {
     try {
