@@ -95,9 +95,8 @@ export class AnalyticsService {
           inflow = actualCf.inflows;
           outflow = actualCf.outflows;
         } else {
-          // Simulation/Backfill fallback for historical context
-          inflow = netSalary;
-          outflow = netSalary * (needsRate + wantsRate);
+          inflow = 0;
+          outflow = 0;
         }
 
         const netChange = inflow - outflow;
