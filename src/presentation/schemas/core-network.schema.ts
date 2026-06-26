@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CoreNetworkType } from '@prisma/client';
 
 export const createCoreNetworkSchema = z.object({
   body: z.object({
@@ -7,6 +8,7 @@ export const createCoreNetworkSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
     percentage: z.number().min(0).max(100, 'Percentage must be between 0 and 100'),
+    type: z.nativeEnum(CoreNetworkType).optional().nullable(),
   }),
 });
 
@@ -15,6 +17,7 @@ export const updateCoreNetworkSchema = z.object({
     name: z.string().min(1, 'Name is required').optional(),
     description: z.string().optional(),
     percentage: z.number().min(0).max(100, 'Percentage must be between 0 and 100').optional(),
+    type: z.nativeEnum(CoreNetworkType).optional().nullable(),
   }),
   params: z.object({
     id: z.string().uuid('Invalid Core Network ID'),
