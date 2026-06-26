@@ -2,6 +2,7 @@ import { Result, ok, err } from '../utils/result';
 import { CoreNetworkRepositoryPg } from '../infrastructure/db/core-network.repository.pg';
 import { MacroAssetRepositoryPg } from '../infrastructure/db/macro-asset.repository.pg';
 import { logger } from '../utils/logger';
+import { CoreNetworkType } from '@prisma/client';
 
 const networkRepo = new CoreNetworkRepositoryPg();
 const assetRepo = new MacroAssetRepositoryPg();
@@ -77,6 +78,7 @@ export class CoreNetworkService {
       name: string;
       description?: string;
       percentage: number;
+      type?: CoreNetworkType | null;
     },
   ): Promise<Result<any, 'MACRO_ASSET_NOT_FOUND' | 'PARENT_NOT_FOUND' | 'EXCEEDS_LIMIT' | 'DB_ERROR'>> {
     try {
@@ -106,6 +108,7 @@ export class CoreNetworkService {
         name: data.name,
         description: data.description ?? null,
         percentage: data.percentage,
+        type: data.type ?? null,
       });
 
       logger.info(`addNode service completed successfully for userId: ${userId}, nodeId: ${node.id}`);
@@ -126,6 +129,7 @@ export class CoreNetworkService {
       name?: string;
       description?: string;
       percentage?: number;
+      type?: CoreNetworkType | null;
     },
   ): Promise<Result<any, 'NOT_FOUND' | 'EXCEEDS_LIMIT' | 'DB_ERROR'>> {
     try {
