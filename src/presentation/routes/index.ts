@@ -8,6 +8,7 @@ import { sweepRouter } from "./sweep.route";
 import { dashboardRouter } from "./dashboard.route";
 import { coreNetworkRouter } from "./core-network.route";
 import cashFlowRouter from "./cash-flow.route";
+import { analyticsRouter } from "./analytics.route";
 
 const apiRouter = Router();
 
@@ -37,5 +38,8 @@ apiRouter.use('/core-network', coreNetworkRouter);
 
 // 9. Cash Flows (Inflows & Outflows for Core Networks)
 apiRouter.use('/cash-flows', cashFlowRouter);
+
+// 10. Analytics Telemetry
+apiRouter.use('/analytics', analyticsRouter);
 
 export { apiRouter };

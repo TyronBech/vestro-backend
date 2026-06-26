@@ -7,6 +7,7 @@ import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
 
 import { UserRepositoryPg } from '../infrastructure/db/user.repository.pg';
+import { BudgetConfigRepositoryPg } from '../infrastructure/db/budget-config.repository.pg';
 import { Result, ok, err } from '../utils/result';
 import { env } from '../config/env';
 import {
@@ -50,6 +51,17 @@ export class AuthService {
         email: input.email,
         name: input.name,
         passwordHash,
+      });
+
+      // Automatically create a default BudgetConfig for the new user
+      const budgetRepo = new BudgetConfigRepositoryPg();
+      await budgetRepo.upsertByUserId(user.id, {
+        netSalary: 2500000, // Default ₱25,000.00 (in cents)
+        needsRate: 0.50,
+        wantsRate: 0.30,
+        savingsRate: 0.10,
+        investmentsRate: 0.10,
+        cashAmount: 0,
       });
 
       const token = this.generateToken(user.id, user.email, false);
@@ -127,6 +139,17 @@ export class AuthService {
           user = await userRepo.create({
             email,
             name: fullName || 'User',
+          });
+
+          // Automatically create a default BudgetConfig for the new OAuth user
+          const budgetRepo = new BudgetConfigRepositoryPg();
+          await budgetRepo.upsertByUserId(user.id, {
+            netSalary: 2500000, // Default ₱25,000.00 (in cents)
+            needsRate: 0.50,
+            wantsRate: 0.30,
+            savingsRate: 0.10,
+            investmentsRate: 0.10,
+            cashAmount: 0,
           });
         } catch (dbError: any) {
           if (dbError.code === 'P2002') {

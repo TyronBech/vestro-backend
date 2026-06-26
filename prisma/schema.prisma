@@ -115,11 +115,11 @@ model CoreNetwork {
   parent   CoreNetwork?  @relation("NetworkTree", fields: [parentId], references: [id])
   children CoreNetwork[] @relation("NetworkTree")
 
-
   name        String // e.g., "Payroll Catch", "Router Push"
   description String?
   percentage  Float   @default(0.0)
   balance     Float   @default(0.0)
+  type        CoreNetworkType?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -145,4 +145,18 @@ model CashFlow {
   notes String? // Optional notes about the transaction
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum CoreNetworkType {
+  EMERGENCY_FUND
+  RENT
+  WANTS_SANDBOX
+  INVESTMENTS
+  INSURANCE
+  CREDIT_BUFFER
+  PERSONAL_GOAL
+  SAVINGS_VAULT
+  CREDIT_CARD
+  UTILITIES
+  PAYCHECK
 }
