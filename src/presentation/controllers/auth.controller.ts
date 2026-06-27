@@ -113,6 +113,45 @@ export class AuthController {
     res.status(200).json({ data: result.value });
   }
 
+  static async disableBiometrics(req: any, res: Response): Promise<void> {
+    logger.info(`Disable biometrics request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    const result = await AuthService.disableBiometrics(userId);
+    if (!result.ok) {
+      logger.error(`Failed to disable biometrics for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Failed to disable biometrics' }] });
+      return;
+    }
+    logger.info(`Disable biometrics request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async disable2fa(req: any, res: Response): Promise<void> {
+    logger.info(`Disable 2FA request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    const result = await AuthService.disable2fa(userId);
+    if (!result.ok) {
+      logger.error(`Failed to disable 2FA for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Failed to disable 2FA' }] });
+      return;
+    }
+    logger.info(`Disable 2FA request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+
   static async biometricLogin(req: Request, res: Response): Promise<void> {
     logger.info(`Biometric login request received`);
     const result = await AuthService.biometricLogin(req.body);
