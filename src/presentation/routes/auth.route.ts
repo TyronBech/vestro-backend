@@ -19,11 +19,14 @@ authRouter.get('/login', (req, res) => {
 
 authRouter.post('/2fa/generate', authenticateJWT, authRateLimiter, AuthController.generate2fa);
 authRouter.post('/2fa/enable', authenticateJWT, authRateLimiter, validate(verify2faSchema), AuthController.enable2fa);
+authRouter.post('/2fa/disable', authenticateJWT, authRateLimiter, AuthController.disable2fa);
 authRouter.post('/2fa/login', authRateLimiter, validate(verify2faSchema), AuthController.loginWith2fa);
 
 authRouter.post('/supabase/verify', authRateLimiter, validate(verifySupabaseSchema), AuthController.verifySupabase);
 authRouter.post('/biometrics/enable', authenticateJWT, authRateLimiter, validate(enableBiometricsSchema), AuthController.enableBiometrics);
+authRouter.post('/biometrics/disable', authenticateJWT, authRateLimiter, AuthController.disableBiometrics);
 authRouter.post('/biometrics/login', authRateLimiter, validate(biometricLoginSchema), AuthController.biometricLogin);
+
 
 authRouter.post('/forgot-password', authRateLimiter, validate(forgotPasswordSchema), AuthController.forgotPassword);
 authRouter.post('/reset-password', authRateLimiter, validate(resetPasswordSchema), AuthController.resetPassword);

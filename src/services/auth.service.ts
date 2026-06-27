@@ -305,6 +305,63 @@ export class AuthService {
   }
 
   /**
+   * Disables biometrics for the authenticated user and clears the biometric key hash.
+   * @param userId Authenticated user's ID
+   */
+  static async disableBiometrics(
+    userId: string,
+  ): Promise<Result<boolean, 'USER_NOT_FOUND' | 'DB_ERROR'>> {
+    try {
+      logger.info(`Executing disableBiometrics service for userId: ${userId}`);
+      const user = await userRepo.findById(userId);
+      if (!user) {
+        logger.warn(`disableBiometrics failed: User not found for userId: ${userId}`);
+        return err('USER_NOT_FOUND');
+      }
+
+      await userRepo.update(userId, {
+        biometricsEnabled: false,
+        biometricKeyHash: null,
+      });
+
+      logger.info(`disableBiometrics service completed successfully for userId: ${userId}`);
+      return ok(true);
+    } catch (error) {
+      logger.error(`disableBiometrics service DB_ERROR for userId ${userId}:`, error);
+      return err('DB_ERROR');
+    }
+  }
+
+  /**
+   * Disables two-factor authentication (2FA) for the user and clears the 2FA secret.
+   * @param userId Authenticated user's ID
+   */
+  static async disable2fa(
+    userId: string,
+  ): Promise<Result<boolean, 'USER_NOT_FOUND' | 'DB_ERROR'>> {
+    try {
+      logger.info(`Executing disable2fa service for userId: ${userId}`);
+      const user = await userRepo.findById(userId);
+      if (!user) {
+        logger.warn(`disable2fa failed: User not found for userId: ${userId}`);
+        return err('USER_NOT_FOUND');
+      }
+
+      await userRepo.update(userId, {
+        is2FAEnabled: false,
+        twoFactorSecret: null,
+      });
+
+      logger.info(`disable2fa service completed successfully for userId: ${userId}`);
+      return ok(true);
+    } catch (error) {
+      logger.error(`disable2fa service DB_ERROR for userId ${userId}:`, error);
+      return err('DB_ERROR');
+    }
+  }
+
+
+  /**
    * Authenticates a user via biometric key comparison against the stored hash.
    * @param input Validated biometric login payload
    */
