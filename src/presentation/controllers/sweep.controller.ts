@@ -42,6 +42,27 @@ export class SweepController {
     res.status(200).json({ data: result.value });
   }
 
+  /** POST /sweep/manual — Create manual/custom sweep log */
+  static async createManualSweep(req: any, res: Response): Promise<void> {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    logger.info(`createManualSweep request received for user: ${req.user?.email}`);
+    const { amount, coreNetworkId, notes, sweptAt } = req.body;
+    const result = await SweepService.createManualSweep(userId, amount, coreNetworkId, notes, sweptAt);
+    if (!result.ok) {
+      logger.error(`createManualSweep failed for user: ${req.user?.email}, Error: ${result.error}`);
+      const status = result.error === 'CORE_NETWORK_NOT_FOUND' ? 404 : 500;
+      res.status(status).json({ errors: [{ code: result.error, message: 'Failed to record manual sweep' }] });
+      return;
+    }
+    logger.info(`createManualSweep request successful for user: ${req.user?.email}`);
+    res.status(201).json({ data: result.value });
+  }
+
   /** GET /sweep/history — List sweep history */
   static async listSweepHistory(req: any, res: Response): Promise<void> {
     const userId = req.user?.id;

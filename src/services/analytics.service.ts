@@ -3,12 +3,14 @@ import { BudgetConfigRepositoryPg } from '../infrastructure/db/budget-config.rep
 import { MacroAssetRepositoryPg } from '../infrastructure/db/macro-asset.repository.pg';
 import { CoreNetworkRepositoryPg } from '../infrastructure/db/core-network.repository.pg';
 import { CashFlowRepositoryPg } from '../infrastructure/db/cash-flow.repository.pg';
+import { SweepLogRepositoryPg } from '../infrastructure/db/sweep-log.repository.pg';
 import { logger } from '../utils/logger';
 
 const budgetConfigRepo = new BudgetConfigRepositoryPg();
 const macroAssetRepo = new MacroAssetRepositoryPg();
 const coreNetworkRepo = new CoreNetworkRepositoryPg();
 const cashFlowRepo = new CashFlowRepositoryPg();
+const sweepLogRepo = new SweepLogRepositoryPg();
 
 export class AnalyticsService {
   /**
@@ -23,6 +25,7 @@ export class AnalyticsService {
       const macroAssets = await macroAssetRepo.findByUserId(userId);
       const coreNetworks = await coreNetworkRepo.findByUserId(userId);
       const cashFlows = await cashFlowRepo.findByUserId(userId);
+      const sweepLogs = await sweepLogRepo.findByUserId(userId);
 
       // 2. Compute Savings & Investments totals from active CoreNetwork nodes
       // Savings includes emergency funds, vaults, sinking funds, buffers, etc.
@@ -123,6 +126,25 @@ export class AnalyticsService {
         outflow: calculatedPoints[i]!.outflow,
       }));
 
+      // Group sweep logs by Year-Month
+      const sweepMap = new Map<string, number>();
+      for (const log of sweepLogs) {
+        const date = new Date(log.sweptAt);
+        const key = `${date.getFullYear()}-${date.getMonth()}`;
+        const currentAmount = sweepMap.get(key) || 0;
+        sweepMap.set(key, currentAmount + log.amount);
+      }
+
+      // Construct 6-month sweep trend
+      const sweepTrend = months.map((m) => {
+        const key = `${m.year}-${m.monthIdx}`;
+        const amount = sweepMap.get(key) || 0;
+        return {
+          month: m.label,
+          amount,
+        };
+      });
+
       // 5. Structure Core Network Balances matching corresponding MacroAsset styles
       const coreNetworkBalances = coreNetworks.map(node => {
         const matchedAsset = macroAssets.find(a => a.id === node.macroAssetId);
@@ -142,6 +164,7 @@ export class AnalyticsService {
         netWorthTrend,
         cashFlowTrend,
         coreNetworkBalances,
+        sweepTrend,
         budgetConfig: budgetConfig ? {
           netSalary: budgetConfig.netSalary,
           needsRate: budgetConfig.needsRate,

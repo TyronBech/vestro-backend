@@ -80,6 +80,9 @@ model SweepLog {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  coreNetworkId String?
+  coreNetwork   CoreNetwork? @relation(fields: [coreNetworkId], references: [id], onDelete: SetNull)
+
   amount      Float // Amount swept out of Wants
   targetVault String // Bank to store the amount
   notes       String? // e.g., "Skipped Steam sale this month"
@@ -125,6 +128,7 @@ model CoreNetwork {
   updatedAt DateTime @updatedAt
 
   cashFlows CashFlow[]
+  sweepLogs SweepLog[]
 }
 
 enum CashFlowType {
