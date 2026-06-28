@@ -160,6 +160,72 @@ export class SweepService {
   }
 
   /**
+   * Creates a manual/custom sweep log entry.
+   * Optionally accepts a custom sweptAt timestamp.
+   */
+  static async createManualSweep(
+    userId: string,
+    amount: number,
+    coreNetworkId: string,
+    notes?: string,
+    sweptAt?: string,
+  ): Promise<Result<any, 'INVALID_AMOUNT' | 'CORE_NETWORK_NOT_FOUND' | 'DB_ERROR'>> {
+    try {
+      logger.info(`Executing createManualSweep service for userId: ${userId}, amount: ${amount}, coreNetworkId: ${coreNetworkId}`);
+      
+      if (amount <= 0) {
+        return err('INVALID_AMOUNT');
+      }
+
+      // 1. Retrieve CoreNetwork node to check ownership and get MacroAsset
+      const coreNetwork = await prisma.coreNetwork.findUnique({
+        where: { id: coreNetworkId },
+        include: { macroAsset: true },
+      });
+
+      if (!coreNetwork || coreNetwork.userId !== userId) {
+        logger.warn(`createManualSweep failed: Core network not found or ownership mismatch for coreNetworkId: ${coreNetworkId}, userId: ${userId}`);
+        return err('CORE_NETWORK_NOT_FOUND');
+      }
+
+      const parsedDate = sweptAt ? new Date(sweptAt) : new Date();
+
+      // 2. Perform updates atomically in a Prisma transaction
+      const sweepLog = await prisma.$transaction(async (tx) => {
+        // Increment CoreNetwork balance
+        await tx.coreNetwork.update({
+          where: { id: coreNetworkId },
+          data: { balance: { increment: amount } },
+        });
+
+        // Increment MacroAsset balance
+        await tx.macroAsset.update({
+          where: { id: coreNetwork.macroAssetId },
+          data: { balance: { increment: amount } },
+        });
+
+        // Log the sweep
+        return await tx.sweepLog.create({
+          data: {
+            userId,
+            coreNetworkId,
+            amount,
+            targetVault: coreNetwork.macroAsset.bankName,
+            notes: notes ?? null,
+            sweptAt: parsedDate,
+          },
+        });
+      });
+
+      logger.info(`createManualSweep service completed successfully for userId: ${userId}, sweepLogId: ${sweepLog.id}`);
+      return ok(sweepLog);
+    } catch (error) {
+      logger.error(`createManualSweep service DB_ERROR for userId ${userId}:`, error);
+      return err('DB_ERROR');
+    }
+  }
+
+  /**
    * Returns the full sweep history for a user, ordered newest first.
    * @param userId Authenticated user's ID from JWT
    */
