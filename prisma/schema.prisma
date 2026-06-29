@@ -71,6 +71,9 @@ model CreditCard {
   unbilledSpend      Float  @default(0.0) // Track current unbilled swiped amount
   midCyclePaid       Float  @default(0.0) // Amount paid early to drop statement balance
 
+  macroAssetId String?
+  macroAsset   MacroAsset? @relation(fields: [macroAssetId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -103,6 +106,7 @@ model MacroAsset {
   updatedAt  DateTime @updatedAt
 
   coreNetworks CoreNetwork[]
+  creditCards  CreditCard[]
 }
 
 model CoreNetwork {

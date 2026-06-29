@@ -121,6 +121,26 @@ export class CreditCardController {
     res.status(200).json({ data: result.value });
   }
 
+  /** POST /credit-cards/:id/reset — reset a billing cycle */
+  static async resetCycle(req: any, res: Response): Promise<void> {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    logger.info(`resetCycle request received for user: ${req.user?.email}, cardId: ${req.params.id}`);
+    const result = await CreditCardService.resetCycle(userId, req.params.id);
+    if (!result.ok) {
+      const status = result.error === 'NOT_FOUND' ? 404 : 500;
+      logger.error(`resetCycle failed for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(status).json({ errors: [{ code: result.error, message: 'Failed to reset credit card' }] });
+      return;
+    }
+    logger.info(`resetCycle request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
   /** GET /credit-cards/shield-status — Credit Shield pipeline B */
   static async getShieldStatus(req: any, res: Response): Promise<void> {
     const userId = req.user?.id;

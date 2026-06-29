@@ -56,6 +56,7 @@ export class CreditCardService {
       creditLimit: number;
       statementCutoffDay: number;
       paymentDueDay: number;
+      macroAssetId?: string | null;
     },
   ): Promise<Result<any, 'DB_ERROR'>> {
     try {
@@ -84,6 +85,7 @@ export class CreditCardService {
       creditLimit?: number;
       statementCutoffDay?: number;
       paymentDueDay?: number;
+      macroAssetId?: string | null;
     },
   ): Promise<Result<any, 'NOT_FOUND' | 'DB_ERROR'>> {
     try {
@@ -182,6 +184,32 @@ export class CreditCardService {
       return ok(updated);
     } catch (error) {
       logger.error(`recordMidCyclePayment service DB_ERROR for userId ${userId}, cardId ${cardId}:`, error);
+      return err('DB_ERROR');
+    }
+  }
+
+  /**
+   * Resets unbilledSpend and midCyclePaid to 0.
+   * @param userId Authenticated user's ID from JWT
+   * @param cardId Credit card ID
+   */
+  static async resetCycle(
+    userId: string,
+    cardId: string,
+  ): Promise<Result<any, 'NOT_FOUND' | 'DB_ERROR'>> {
+    try {
+      logger.info(`Executing resetCycle service for userId: ${userId}, cardId: ${cardId}`);
+      const existing = await cardRepo.findById(cardId);
+      if (!existing || existing.userId !== userId) {
+        logger.warn(`resetCycle failed: Card not found or ownership mismatch for cardId: ${cardId}, userId: ${userId}`);
+        return err('NOT_FOUND');
+      }
+
+      const updated = await cardRepo.resetCycle(cardId);
+      logger.info(`resetCycle service completed successfully for userId: ${userId}, cardId: ${cardId}`);
+      return ok(updated);
+    } catch (error) {
+      logger.error(`resetCycle service DB_ERROR for userId ${userId}, cardId ${cardId}:`, error);
       return err('DB_ERROR');
     }
   }
