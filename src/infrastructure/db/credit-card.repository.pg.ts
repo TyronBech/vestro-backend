@@ -16,8 +16,11 @@ export class CreditCardRepositoryPg
   async findByUserId(userId: string): Promise<CreditCard[]> {
     return this.db.creditCard.findMany({
       where: { userId },
+      include: {
+        macroAsset: true,
+      },
       orderBy: { createdAt: 'desc' },
-    });
+    }) as any;
   }
 
   async incrementUnbilledSpend(cardId: string, amount: number): Promise<CreditCard> {

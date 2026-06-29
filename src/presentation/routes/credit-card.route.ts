@@ -25,3 +25,4 @@ creditCardRouter.patch('/:id', authenticateJWT, validate(updateCreditCardSchema)
 creditCardRouter.delete('/:id', authenticateJWT, validate(idParamSchema), CreditCardController.deleteCard);
 creditCardRouter.post('/:id/spend', authenticateJWT, validate(recordSpendSchema), CreditCardController.recordSpend);
 creditCardRouter.post('/:id/mid-cycle-payment', authenticateJWT, validate(recordMidCyclePaymentSchema), CreditCardController.recordMidCyclePayment);
+creditCardRouter.post('/:id/reset', authenticateJWT, validate(idParamSchema), CreditCardController.resetCycle);

@@ -6,6 +6,7 @@ export const createCreditCardSchema = z.object({
     creditLimit: z.number().positive("Credit limit must be positive"),
     statementCutoffDay: z.number().int().min(1).max(31, "Statement cutoff day must be 1–31"),
     paymentDueDay: z.number().int().min(1).max(31, "Payment due day must be 1–31"),
+    macroAssetId: z.string().uuid("Invalid macro asset ID").nullable().optional(),
   })
 });
 
@@ -15,6 +16,7 @@ export const updateCreditCardSchema = z.object({
     creditLimit: z.number().positive().optional(),
     statementCutoffDay: z.number().int().min(1).max(31).optional(),
     paymentDueDay: z.number().int().min(1).max(31).optional(),
+    macroAssetId: z.string().uuid("Invalid macro asset ID").nullable().optional(),
   })
   .strict(),
   params: z.object({
