@@ -9,6 +9,7 @@ import { dashboardRouter } from "./dashboard.route";
 import { coreNetworkRouter } from "./core-network.route";
 import cashFlowRouter from "./cash-flow.route";
 import { analyticsRouter } from "./analytics.route";
+import { notificationRouter } from "./notification.route";
 
 const apiRouter = Router();
 
@@ -41,5 +42,8 @@ apiRouter.use('/cash-flows', cashFlowRouter);
 
 // 10. Analytics Telemetry
 apiRouter.use('/analytics', analyticsRouter);
+
+// 11. Push Notifications & In-App Alerts
+apiRouter.use('/notifications', notificationRouter);
 
 export { apiRouter };
