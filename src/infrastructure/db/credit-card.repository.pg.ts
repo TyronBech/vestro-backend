@@ -43,4 +43,10 @@ export class CreditCardRepositoryPg
       data: { unbilledSpend: 0, midCyclePaid: 0 },
     });
   }
+
+  async findByDueDay(dueDay: number): Promise<CreditCard[]> {
+    return this.db.creditCard.findMany({
+      where: { paymentDueDay: dueDay },
+    });
+  }
 }

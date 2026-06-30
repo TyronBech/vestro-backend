@@ -42,6 +42,8 @@ model User {
   macroAssets  MacroAsset[]
   coreNetwork  CoreNetwork[]
   cashFlows    CashFlow[]
+  pushTokens    PushToken[]
+  notifications Notification[]
 }
 
 model BudgetConfig {
@@ -167,4 +169,32 @@ enum CoreNetworkType {
   CREDIT_CARD
   UTILITIES
   PAYCHECK
+}
+
+model PushToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  deviceType String?  // "ios" | "android"
+  deviceName String?  // e.g., "iPhone 15 Pro"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  data      Json?     // Custom metadata (e.g., { type: "CREDIT_DUE", cardId: "..." })
+  isRead    Boolean   @default(false)
+  sentAt    DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([userId])
+  @@index([userId, isRead])
 }

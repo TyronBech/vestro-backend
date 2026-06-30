@@ -20,4 +20,7 @@ export interface ICreditCardRepository extends IBaseRepository<CreditCard, Creat
 
   /** Resets unbilledSpend and midCyclePaid to 0 (end-of-cycle reset). */
   resetCycle(cardId: string): Promise<CreditCard>;
+
+  /** Returns all credit cards where paymentDueDay matches the specified day. */
+  findByDueDay(dueDay: number): Promise<CreditCard[]>;
 }
