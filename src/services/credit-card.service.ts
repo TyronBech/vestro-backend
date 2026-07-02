@@ -57,6 +57,7 @@ export class CreditCardService {
       statementCutoffDay: number;
       paymentDueDay: number;
       macroAssetId?: string | null;
+      cardBrand?: any;
     },
   ): Promise<Result<any, 'DB_ERROR'>> {
     try {
@@ -86,6 +87,7 @@ export class CreditCardService {
       statementCutoffDay?: number;
       paymentDueDay?: number;
       macroAssetId?: string | null;
+      cardBrand?: any;
     },
   ): Promise<Result<any, 'NOT_FOUND' | 'DB_ERROR'>> {
     try {

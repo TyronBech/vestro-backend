@@ -8,6 +8,7 @@ export const createMacroAssetSchema = z.object({
     targetGoal: z.number().positive("Target goal must be positive").nullable().optional(),
     iconUrl: z.string().url("Must be a valid URL").nullable().optional(),
     colorCode: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code").nullable().optional(),
+    cardBrand: z.enum(['MASTERCARD', 'VISA']).optional(),
   })
 });
 
@@ -19,6 +20,7 @@ export const updateMacroAssetSchema = z.object({
     targetGoal: z.number().positive().nullable().optional(),
     iconUrl: z.string().url().nullable().optional(),
     colorCode: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+    cardBrand: z.enum(['MASTERCARD', 'VISA']).optional(),
   })
   .strict(),
   params: z.object({
