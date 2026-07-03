@@ -6,7 +6,7 @@ services:
     branch: main
     autoDeploy: false
     rootDir: .
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build && npm prune --production
     startCommand: npx prisma migrate deploy && npm start
     envVars:
       - key: NODE_ENV
