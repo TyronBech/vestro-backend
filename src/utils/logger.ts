@@ -25,31 +25,35 @@ const fileFormat = winston.format.combine(
   winston.format.json()
 );
 
-// Create the Daily Rotate Transports
-const dailyAppLogTransport = new winston.transports.DailyRotateFile({
-  filename: path.join(logDir, 'vestro-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  zippedArchive: true,
-  maxSize: '20m',      
-  maxFiles: '14d',
-});
+const transports: winston.transport[] = [];
 
-// Daily Rotate Transports for Error Logs
-const dailyErrorLogTransport = new winston.transports.DailyRotateFile({
-  filename: path.join(logDir, 'error-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  level: 'error',
-  maxFiles: '30d',
-});
+if (env.NODE_ENV !== 'test') {
+  // Create the Daily Rotate Transports
+  const dailyAppLogTransport = new winston.transports.DailyRotateFile({
+    filename: path.join(logDir, 'vestro-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: true,
+    maxSize: '20m',      
+    maxFiles: '14d',
+  });
+
+  // Daily Rotate Transports for Error Logs
+  const dailyErrorLogTransport = new winston.transports.DailyRotateFile({
+    filename: path.join(logDir, 'error-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    level: 'error',
+    maxFiles: '30d',
+  });
+
+  transports.push(dailyAppLogTransport);
+  transports.push(dailyErrorLogTransport);
+}
 
 // Initialize the Logger
 export const logger = winston.createLogger({
   level: 'info',
   format: fileFormat,
-  transports: [
-    dailyAppLogTransport,
-    dailyErrorLogTransport,
-  ],
+  transports,
 });
 
 // Environment Switch (Turn Off in Production)

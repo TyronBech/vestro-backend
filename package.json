@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "cross-env DATABASE_URL=\"postgresql://postgres:12345@localhost:5432/vestro_test\" jest --runInBand",
+    "test": "cross-env DATABASE_URL=\"postgresql://postgres:12345@localhost:5432/vestro_test\" jest --runInBand --forceExit",
     "start": "node dist/server.js",
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc"
