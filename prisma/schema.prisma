@@ -72,6 +72,7 @@ model CreditCard {
   paymentDueDay      Int // Day of month payment is due (e.g., 5)
   unbilledSpend      Float  @default(0.0) // Track current unbilled swiped amount
   midCyclePaid       Float  @default(0.0) // Amount paid early to drop statement balance
+  cardBrand          CardBrand @default(VISA)
 
   macroAssetId String?
   macroAsset   MacroAsset? @relation(fields: [macroAssetId], references: [id], onDelete: SetNull)
@@ -105,10 +106,16 @@ model MacroAsset {
   targetGoal Float? // Sinking fund target
   iconUrl    String?  // The image URL
   colorCode  String?  // Hexadecimal color code, e.g., "#b31217"
+  cardBrand  CardBrand @default(VISA)
   updatedAt  DateTime @updatedAt
 
   coreNetworks CoreNetwork[]
   creditCards  CreditCard[]
+}
+
+enum CardBrand {
+  MASTERCARD
+  VISA
 }
 
 model CoreNetwork {
