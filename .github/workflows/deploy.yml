@@ -46,18 +46,18 @@ jobs:
         with:
           node-version: 24
           cache: 'npm'
-          cache-dependency-path: vestro-backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: vestro-backend
         run: npm ci
 
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Push Prisma Schema
-        working-directory: vestro-backend
         run: npx prisma db push
 
       - name: Run Tests
-        working-directory: vestro-backend
         run: npm run test
 
       - name: Trigger Render Deploy
