@@ -1,0 +1,10 @@
+# Enforce LF line endings for all text files in this repo.
+# This prevents Windows users from introducing CRLF into the codebase.
+* text=auto eol=lf
+
+# Explicitly declare these as binary — Git won't touch their line endings
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

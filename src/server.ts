@@ -1,8 +1,10 @@
 import { createApp } from "./app";
-import { HOST, PORT } from "./config/env";
+import { env } from "./config/env";
+import { SchedulerService } from "./services/scheduler.service";
 
 const app = createApp();
 
-app.listen(PORT, HOST, () => {
-  console.log(`Vestro backend running at http://${HOST}:${PORT}`);
+app.listen(Number(env.PORT), env.HOST, () => {
+  console.log(`Vestro backend running at http://${env.HOST}:${env.PORT}`);
+  SchedulerService.initialize();
 });

@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: vestro-backend
+    runtime: node
+    plan: free 
+    branch: main
+    autoDeploy: false
+    rootDir: .
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      
+      # Automatically generated secure random secret for JWT signing
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Database connection variables (To be supplied manually from Supabase)
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+
+      # External authentication secrets (To be supplied manually in Render Dashboard)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false

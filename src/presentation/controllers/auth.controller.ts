@@ -1,0 +1,191 @@
+import { Request, Response } from 'express';
+import { AuthService } from '../../services/auth.service';
+import qrcode from 'qrcode';
+import { logger } from '../../utils/logger';
+
+export class AuthController {
+  static async signup(req: Request, res: Response): Promise<void> {
+    logger.info(`Signup request received for user: ${req.body.email}`);
+    const result = await AuthService.signup(req.body);
+    if (!result.ok) {
+      logger.error(`Signup failed for user: ${req.body.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Signup failed' }] });
+      return;
+    }
+    logger.info(`Signup successful for user: ${req.body.email}`);
+    res.status(201).json({ data: result.value });
+  }
+
+  static async login(req: Request, res: Response): Promise<void> {
+    logger.info(`Login request received for user: ${req.body.email}`);
+    const result = await AuthService.login(req.body);
+    if (!result.ok) {
+      logger.error(`Login failed for user: ${req.body.email}, Error: ${result.error}`);
+      res.status(401).json({ errors: [{ code: result.error, message: 'Invalid credentials' }] });
+      return;
+    }
+    logger.info(`Login successful for user: ${req.body.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async generate2fa(req: any, res: Response): Promise<void> {
+    logger.info(`Generate 2FA request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+    const result = await AuthService.generate2faSecret(userId);
+    if (!result.ok) {
+      logger.error(`Failed to generate 2FA for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Failed to generate 2FA' }] });
+      return;
+    }
+    const qrCodeImage = await qrcode.toDataURL(result.value.otpauthUrl);
+    logger.info(`Generate 2FA request successful for user: ${req.user?.email}`);
+    res.status(200).json({
+      data: {
+        secret: result.value.secret,
+        qrCodeImage,
+      },
+    });
+  }
+
+  static async enable2fa(req: any, res: Response): Promise<void> {
+    logger.info(`Enable 2FA request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+    const result = await AuthService.verifyAndEnable2fa({ userId, token: req.body.token });
+    if (!result.ok) {
+      logger.error(`Failed to enable 2FA for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Invalid 2FA token' }] });
+      return;
+    }
+    logger.info(`Enable 2FA request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: { success: true } });
+  }
+
+  static async loginWith2fa(req: Request, res: Response): Promise<void> {
+    logger.info(`Login with 2FA request received`);
+    const result = await AuthService.loginWith2fa(req.body);
+    if (!result.ok) {
+      logger.error(`Failed to login with 2FA, Error: ${result.error}`);
+      res.status(401).json({ errors: [{ code: result.error, message: 'Invalid 2FA token' }] });
+      return;
+    }
+    logger.info(`Login with 2FA request successful`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async verifySupabase(req: Request, res: Response): Promise<void> {
+    logger.info(`Verify Supabase request received`);
+    const result = await AuthService.verifySupabaseLogin(req.body);
+    if (!result.ok) {
+      logger.error(`Failed to verify Supabase, Error: ${result.error}`);
+      res.status(401).json({ errors: [{ code: result.error, message: 'Invalid Supabase token' }] });
+      return;
+    }
+    logger.info(`Verify Supabase request successful`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async enableBiometrics(req: any, res: Response): Promise<void> {
+    logger.info(`Enable biometrics request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    const result = await AuthService.enableBiometrics(userId);
+    if (!result.ok) {
+      logger.error(`Failed to enable biometrics for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Failed to enable biometrics' }] });
+      return;
+    }
+    logger.info(`Enable biometrics request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async disableBiometrics(req: any, res: Response): Promise<void> {
+    logger.info(`Disable biometrics request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    const result = await AuthService.disableBiometrics(userId);
+    if (!result.ok) {
+      logger.error(`Failed to disable biometrics for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Failed to disable biometrics' }] });
+      return;
+    }
+    logger.info(`Disable biometrics request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async disable2fa(req: any, res: Response): Promise<void> {
+    logger.info(`Disable 2FA request received for user: ${req.user?.email}`);
+    const userId = req.user?.id;
+    if (!userId) {
+      logger.error(`Not authenticated`);
+      res.status(401).json({ errors: [{ code: 'UNAUTHORIZED', message: 'Not authenticated' }] });
+      return;
+    }
+
+    const result = await AuthService.disable2fa(userId);
+    if (!result.ok) {
+      logger.error(`Failed to disable 2FA for user: ${req.user?.email}, Error: ${result.error}`);
+      res.status(400).json({ errors: [{ code: result.error, message: 'Failed to disable 2FA' }] });
+      return;
+    }
+    logger.info(`Disable 2FA request successful for user: ${req.user?.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+
+  static async biometricLogin(req: Request, res: Response): Promise<void> {
+    logger.info(`Biometric login request received`);
+    const result = await AuthService.biometricLogin(req.body);
+    if (!result.ok) {
+      logger.error(`Failed biometric login, Error: ${result.error}`);
+      res.status(401).json({ errors: [{ code: result.error, message: 'Invalid biometric key' }] });
+      return;
+    }
+    logger.info(`Biometric login request successful`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async forgotPassword(req: Request, res: Response): Promise<void> {
+    logger.info(`Forgot password request received for email: ${req.body.email}`);
+    const result = await AuthService.forgotPassword(req.body);
+    if (!result.ok) {
+      logger.error(`Forgot password request failed for email: ${req.body.email}, Error: ${result.error}`);
+      res.status(500).json({ errors: [{ code: result.error, message: 'Forgot password operation failed' }] });
+      return;
+    }
+    logger.info(`Forgot password request successful for email: ${req.body.email}`);
+    res.status(200).json({ data: result.value });
+  }
+
+  static async resetPassword(req: Request, res: Response): Promise<void> {
+    logger.info(`Reset password request received for email: ${req.body.email}`);
+    const result = await AuthService.resetPassword(req.body);
+    if (!result.ok) {
+      logger.error(`Reset password request failed for email: ${req.body.email}, Error: ${result.error}`);
+      const status = result.error === 'INVALID_OR_EXPIRED_OTP' ? 400 : 401;
+      res.status(status).json({ errors: [{ code: result.error, message: 'Reset password operation failed' }] });
+      return;
+    }
+    logger.info(`Reset password request successful for email: ${req.body.email}`);
+    res.status(200).json({ data: result.value });
+  }
+}

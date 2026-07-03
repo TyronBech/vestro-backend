@@ -1,0 +1,207 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String?
+  passwordHash String?
+  avatarUrl    String?
+
+  // ── 2FA (Google Authenticator / TOTP) ──
+  twoFactorSecret String?
+  is2FAEnabled    Boolean @default(false)
+
+  // ── Biometrics (FaceID / Fingerprint) ──
+  biometricsEnabled Boolean @default(false)
+  biometricKeyHash  String?
+
+  // ── Security Toggles ──
+  panicModeEnabled Boolean @default(false)
+  spendingLimit    Float?
+
+  // ── Password Reset ──
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+
+  // ── Activity Tracking ──
+  lastActiveAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Relations to the Poverty Firewall System ──
+  budgetConfig BudgetConfig?
+  creditCards  CreditCard[]
+  sweepLogs    SweepLog[]
+  macroAssets  MacroAsset[]
+  coreNetwork  CoreNetwork[]
+  cashFlows    CashFlow[]
+  pushTokens    PushToken[]
+  notifications Notification[]
+}
+
+model BudgetConfig {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  netSalary       Float // Baseline salary (e.g., 25000)
+  needsRate       Float @default(0.50) // 50%
+  wantsRate       Float @default(0.30) // 30%
+  savingsRate     Float @default(0.10) // 10%
+  investmentsRate Float @default(0.10) // 10%
+
+  cashAmount Float // Needs: Cash Portion
+  updatedAt  DateTime @updatedAt
+}
+
+model CreditCard {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cardName           String // e.g., "UnionBank U Card"
+  creditLimit        Float // e.g., 20000
+  statementCutoffDay Int // Day of month statement is generated (e.g., 15)
+  paymentDueDay      Int // Day of month payment is due (e.g., 5)
+  unbilledSpend      Float  @default(0.0) // Track current unbilled swiped amount
+  midCyclePaid       Float  @default(0.0) // Amount paid early to drop statement balance
+  cardBrand          CardBrand @default(VISA)
+
+  macroAssetId String?
+  macroAsset   MacroAsset? @relation(fields: [macroAssetId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SweepLog {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coreNetworkId String?
+  coreNetwork   CoreNetwork? @relation(fields: [coreNetworkId], references: [id], onDelete: SetNull)
+
+  amount      Float // Amount swept out of Wants
+  targetVault String // Bank to store the amount
+  notes       String? // e.g., "Skipped Steam sale this month"
+  sweptAt     DateTime @default(now())
+}
+
+model MacroAsset {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bankName   String // "LANDBANK", "BPI"
+  purpose    String // e.g., "Emergency Fund", "Wants Sandbox", "Rent Reservoir"
+  balance    Float    @default(0.0)
+  targetGoal Float? // Sinking fund target
+  iconUrl    String?  // The image URL
+  colorCode  String?  // Hexadecimal color code, e.g., "#b31217"
+  cardBrand  CardBrand @default(VISA)
+  updatedAt  DateTime @updatedAt
+
+  coreNetworks CoreNetwork[]
+  creditCards  CreditCard[]
+}
+
+enum CardBrand {
+  MASTERCARD
+  VISA
+}
+
+model CoreNetwork {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  macroAssetId String
+  macroAsset   MacroAsset @relation(fields: [macroAssetId], references: [id], onDelete: Cascade)
+
+  // Self-referencing relationship for the routing tree structure
+  parentId String?
+  parent   CoreNetwork?  @relation("NetworkTree", fields: [parentId], references: [id])
+  children CoreNetwork[] @relation("NetworkTree")
+
+  name        String // e.g., "Payroll Catch", "Router Push"
+  description String?
+  percentage  Float   @default(0.0)
+  balance     Float   @default(0.0)
+  type        CoreNetworkType?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cashFlows CashFlow[]
+  sweepLogs SweepLog[]
+}
+
+enum CashFlowType {
+  INFLOW
+  OUTFLOW
+}
+
+model CashFlow {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coreNetworkId String
+  coreNetwork   CoreNetwork @relation(fields: [coreNetworkId], references: [id], onDelete: Cascade)
+
+  amount Float @default(0.0)
+  type CashFlowType
+  notes String? // Optional notes about the transaction
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CoreNetworkType {
+  EMERGENCY_FUND
+  RENT
+  WANTS_SANDBOX
+  INVESTMENTS
+  INSURANCE
+  CREDIT_BUFFER
+  PERSONAL_GOAL
+  SAVINGS_VAULT
+  CREDIT_CARD
+  UTILITIES
+  PAYCHECK
+}
+
+model PushToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  deviceType String?  // "ios" | "android"
+  deviceName String?  // e.g., "iPhone 15 Pro"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  data      Json?     // Custom metadata (e.g., { type: "CREDIT_DUE", cardId: "..." })
+  isRead    Boolean   @default(false)
+  sentAt    DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
