@@ -9,7 +9,10 @@ class PrismaDB {
 
   static getInstance(): PrismaClient {
     if (!PrismaDB.instance) {
-      const pool = new Pool({ connectionString: env.DIRECT_URL });
+      const pool = new Pool({
+        connectionString: env.DIRECT_URL,
+        allowExitOnIdle: env.NODE_ENV === 'test',
+      });
       const adapter = new PrismaPg(pool);
       PrismaDB.instance = new PrismaClient({ adapter });
     }
