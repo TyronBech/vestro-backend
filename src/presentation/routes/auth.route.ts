@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { authRateLimiter } from '../middleware/rate-limiter.middleware';
 import { authenticateJWT } from '../middleware/auth.middleware';
@@ -9,7 +9,7 @@ export const authRouter = Router();
 
 authRouter.post('/signup', authRateLimiter, validate(signupSchema), AuthController.signup);
 authRouter.post('/login', authRateLimiter, validate(loginSchema), AuthController.login);
-authRouter.get('/login', (req, res) => {
+authRouter.get('/login', (req: Request, res: Response): void => {
   res.json({
     message: "Login endpoint. Please send a POST request with email and password.",
     methods: ["POST"],
