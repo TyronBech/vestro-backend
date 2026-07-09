@@ -46,4 +46,9 @@ apiRouter.use('/analytics', analyticsRouter);
 // 11. Push Notifications & In-App Alerts
 apiRouter.use('/notifications', notificationRouter);
 
+// 12. Health Check / Ping Endpoint
+apiRouter.get('/health', (req, res) => {
+  res.status(200).json({ ok: true, message: "Backend engine running" });
+});
+
 export { apiRouter };
