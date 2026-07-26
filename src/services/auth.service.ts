@@ -55,7 +55,8 @@ export class AuthService {
 
       // Automatically create a default BudgetConfig for the new user
       const budgetRepo = new BudgetConfigRepositoryPg();
-      await budgetRepo.upsertByUserId(user.id, {
+      await budgetRepo.create(user.id, {
+        name: 'Primary Job',
         netSalary: 2500000, // Default ₱25,000.00 (in cents)
         needsRate: 0.50,
         wantsRate: 0.30,
@@ -143,7 +144,8 @@ export class AuthService {
 
           // Automatically create a default BudgetConfig for the new OAuth user
           const budgetRepo = new BudgetConfigRepositoryPg();
-          await budgetRepo.upsertByUserId(user.id, {
+          await budgetRepo.create(user.id, {
+            name: 'Primary Job',
             netSalary: 2500000, // Default ₱25,000.00 (in cents)
             needsRate: 0.50,
             wantsRate: 0.30,
