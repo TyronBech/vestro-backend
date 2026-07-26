@@ -24,8 +24,9 @@ export class DashboardService {
       logger.info(`Executing getDashboardData service for userId: ${userId}`);
 
       // Run all independent pipeline queries in parallel
-      const [budgetResult, shieldResult, assetsResult, sweepResult] = await Promise.all([
+      const [budgetResult, configsResult, shieldResult, assetsResult, sweepResult] = await Promise.all([
         BudgetService.getBudgetConfig(userId),
+        BudgetService.getBudgetConfigs(userId),
         CreditCardService.getCreditShieldStatus(userId),
         MacroAssetService.listAssets(userId),
         SweepService.getSweepReadiness(userId),
@@ -33,6 +34,7 @@ export class DashboardService {
 
       // If any pipeline fails, propagate the error
       if (!budgetResult.ok) return err('DB_ERROR');
+      if (!configsResult.ok) return err('DB_ERROR');
       if (!shieldResult.ok) return err('DB_ERROR');
       if (!assetsResult.ok) return err('DB_ERROR');
       if (!sweepResult.ok) return err('DB_ERROR');
@@ -46,6 +48,7 @@ export class DashboardService {
       logger.info(`getDashboardData service completed successfully for userId: ${userId}`);
       return ok({
         budgetConfig: budgetResult.value,
+        budgetConfigs: configsResult.value,
         creditShield: shieldResult.value,
         macroAssets: assetsResult.value,
         totalBalance,
