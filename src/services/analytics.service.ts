@@ -21,7 +21,8 @@ export class AnalyticsService {
       logger.info(`[AnalyticsService.getAnalyticsData] Fetching analytics for userId: ${userId}`);
 
       // 1. Fetch core records
-      const budgetConfig = await budgetConfigRepo.findByUserId(userId);
+      const budgetConfigs = await budgetConfigRepo.findAllByUserId(userId);
+      const budgetConfig = budgetConfigs[0] || null;
       const macroAssets = await macroAssetRepo.findByUserId(userId);
       const coreNetworks = await coreNetworkRepo.findByUserId(userId);
       const cashFlows = await cashFlowRepo.findByUserId(userId);
@@ -165,6 +166,7 @@ export class AnalyticsService {
         cashFlowTrend,
         coreNetworkBalances,
         sweepTrend,
+        budgetConfigs,
         budgetConfig: budgetConfig ? {
           netSalary: budgetConfig.netSalary,
           needsRate: budgetConfig.needsRate,

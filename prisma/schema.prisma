@@ -36,21 +36,22 @@ model User {
   updatedAt DateTime @updatedAt
 
   // ── Relations to the Poverty Firewall System ──
-  budgetConfig BudgetConfig?
-  creditCards  CreditCard[]
-  sweepLogs    SweepLog[]
-  macroAssets  MacroAsset[]
-  coreNetwork  CoreNetwork[]
-  cashFlows    CashFlow[]
+  budgetConfigs BudgetConfig[]
+  creditCards   CreditCard[]
+  sweepLogs     SweepLog[]
+  macroAssets   MacroAsset[]
+  coreNetwork   CoreNetwork[]
+  cashFlows     CashFlow[]
   pushTokens    PushToken[]
   notifications Notification[]
 }
 
 model BudgetConfig {
   id     String @id @default(uuid())
-  userId String @unique
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  name            String @default("Primary Job")
   netSalary       Float // Baseline salary (e.g., 25000)
   needsRate       Float @default(0.50) // 50%
   wantsRate       Float @default(0.30) // 30%
@@ -58,6 +59,7 @@ model BudgetConfig {
   investmentsRate Float @default(0.10) // 10%
 
   cashAmount Float // Needs: Cash Portion
+  createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
 

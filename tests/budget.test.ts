@@ -133,4 +133,55 @@ describe('Budget Service Tests', () => {
       expect(result.error).toBe('CONFIG_NOT_FOUND');
     }
   });
+
+  it('Should create and retrieve multiple budget configs for the same user', async () => {
+    const createRes = await BudgetService.createBudgetConfig(userId, {
+      name: 'Freelance Job',
+      netSalary: 1500000,
+      needsRate: 0.50,
+      wantsRate: 0.30,
+      savingsRate: 0.10,
+      investmentsRate: 0.10,
+      cashAmount: 200000,
+    });
+    expect(createRes.ok).toBe(true);
+
+    const listRes = await BudgetService.getBudgetConfigs(userId);
+    expect(listRes.ok).toBe(true);
+    if (listRes.ok) {
+      expect(listRes.value.length).toBeGreaterThanOrEqual(2);
+      const freelance = listRes.value.find((c: any) => c.name === 'Freelance Job');
+      expect(freelance).toBeDefined();
+      expect(freelance.netSalary).toBe(1500000);
+    }
+  });
+
+  it('Should update and delete a specific budget config by ID', async () => {
+    const listRes = await BudgetService.getBudgetConfigs(userId);
+    expect(listRes.ok).toBe(true);
+    if (listRes.ok) {
+      const freelance = listRes.value.find((c: any) => c.name === 'Freelance Job');
+      expect(freelance).toBeDefined();
+
+      // Update
+      const updateRes = await BudgetService.updateBudgetConfig(userId, freelance.id, {
+        netSalary: 1800000,
+      });
+      expect(updateRes.ok).toBe(true);
+      if (updateRes.ok) {
+        expect(updateRes.value.netSalary).toBe(1800000);
+      }
+
+      // Delete
+      const deleteRes = await BudgetService.deleteBudgetConfig(userId, freelance.id);
+      expect(deleteRes.ok).toBe(true);
+
+      // Verify deletion
+      const getByIdRes = await BudgetService.getBudgetConfigById(userId, freelance.id);
+      expect(getByIdRes.ok).toBe(false);
+      if (!getByIdRes.ok) {
+        expect(getByIdRes.error).toBe('NOT_FOUND');
+      }
+    }
+  });
 });
