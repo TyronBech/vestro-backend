@@ -149,6 +149,7 @@ export class LuxuryService {
       | 'CASHFLOW_NOT_FOUND'
       | 'INFLOW_CANNOT_BE_LINKED_TO_LUXURY_PURCHASE'
       | 'NETWORK_NOT_FOUND'
+      | 'INSUFFICIENT_FUNDS'
       | 'DB_ERROR'
     >
   > {
@@ -190,6 +191,7 @@ export class LuxuryService {
 
         if (!cfResult.ok) {
           if (cfResult.error === 'NETWORK_NOT_FOUND') return err('NETWORK_NOT_FOUND');
+          if (cfResult.error === 'INSUFFICIENT_FUNDS') return err('INSUFFICIENT_FUNDS');
           return err('DB_ERROR');
         }
 

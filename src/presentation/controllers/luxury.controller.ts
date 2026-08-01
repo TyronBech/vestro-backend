@@ -127,6 +127,9 @@ export class LuxuryController {
       case 'NETWORK_NOT_FOUND':
         res.status(404).json({ error: 'Not Found', message: 'Target core network account not found' });
         break;
+      case 'INSUFFICIENT_FUNDS':
+        res.status(400).json({ error: 'Bad Request', message: 'Insufficient balance in selected Core Network node' });
+        break;
       case 'DB_ERROR':
         res.status(500).json({ error: 'Internal Server Error', message: 'Failed to complete purchase transaction' });
         break;

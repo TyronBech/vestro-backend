@@ -34,7 +34,7 @@ export class CashFlowService {
       type: CashFlowType;
       notes?: string;
     }
-  ): Promise<Result<any, 'NETWORK_NOT_FOUND' | 'INVALID_AMOUNT' | 'DB_ERROR'>> {
+  ): Promise<Result<any, 'NETWORK_NOT_FOUND' | 'INVALID_AMOUNT' | 'INSUFFICIENT_FUNDS' | 'DB_ERROR'>> {
     try {
       logger.info(`Executing createCashFlow service for userId: ${userId}, coreNetworkId: ${data.coreNetworkId}`);
       
@@ -49,6 +49,13 @@ export class CashFlowService {
       }
 
       const amountCents = Math.round(data.amount * 100);
+
+      // Validate sufficient balance for OUTFLOW transactions
+      if (data.type === 'OUTFLOW' && amountCents > network.balance) {
+        logger.warn(`createCashFlow failed: Outflow amount (${amountCents}) exceeds network balance (${network.balance}) for userId: ${userId}`);
+        return err('INSUFFICIENT_FUNDS');
+      }
+
       const signedAmountCents = data.type === 'INFLOW' ? amountCents : -amountCents;
       const cashFlow = await cashFlowRepo.createWithBalanceUpdate(
         {
