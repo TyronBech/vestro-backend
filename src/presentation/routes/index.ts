@@ -10,6 +10,7 @@ import { coreNetworkRouter } from "./core-network.route";
 import cashFlowRouter from "./cash-flow.route";
 import { analyticsRouter } from "./analytics.route";
 import { notificationRouter } from "./notification.route";
+import { luxuryRouter } from "./luxury.route";
 
 const apiRouter = Router();
 
@@ -45,6 +46,9 @@ apiRouter.use('/analytics', analyticsRouter);
 
 // 11. Push Notifications & In-App Alerts
 apiRouter.use('/notifications', notificationRouter);
+
+// 12. Luxury Checklist & Target Wants Planner
+apiRouter.use('/luxuries', luxuryRouter);
 
 // 12. Health Check / Ping Endpoint
 apiRouter.get('/health', (req, res) => {

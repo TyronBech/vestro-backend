@@ -44,6 +44,7 @@ model User {
   cashFlows     CashFlow[]
   pushTokens    PushToken[]
   notifications Notification[]
+  luxuryItems   LuxuryItem[]
 }
 
 model BudgetConfig {
@@ -164,6 +165,8 @@ model CashFlow {
   notes String? // Optional notes about the transaction
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  luxuryItem LuxuryItem?
 }
 
 enum CoreNetworkType {
@@ -206,4 +209,54 @@ model Notification {
 
   @@index([userId])
   @@index([userId, isRead])
+}
+
+enum LuxuryCategory {
+  TECH
+  GADGETS
+  GAMING
+  APPAREL
+  DINING
+  LIFESTYLE
+  OTHER
+}
+
+enum LuxuryPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum LuxuryStatus {
+  WISHLIST
+  SAVING
+  PURCHASED
+  CANCELLED
+}
+
+model LuxuryItem {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  category     LuxuryCategory @default(OTHER)
+  priceCents   Int            // Stored in cents (e.g., 850000 = ₱8,500.00)
+  description  String?
+  priority     LuxuryPriority @default(MEDIUM)
+  status       LuxuryStatus   @default(WISHLIST)
+
+  targetDate   DateTime?
+  purchasedAt  DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+
+  cashFlowId   String?        @unique
+  cashFlow     CashFlow?      @relation(fields: [cashFlowId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
 }

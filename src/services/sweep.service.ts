@@ -69,7 +69,7 @@ export class SweepService {
           balance: wantsAsset.balance,
         },
         availableToSweep: wantsAsset.balance,
-        message: `₱${wantsAsset.balance.toFixed(2)} of unspent lifestyle cash detected. Ready to sweep.`,
+        message: `₱${(wantsAsset.balance / 100).toFixed(2)} of unspent lifestyle cash detected. Ready to sweep.`,
       });
     } catch (error) {
       logger.error(`getSweepReadiness service DB_ERROR for userId ${userId}:`, error);
@@ -177,6 +177,8 @@ export class SweepService {
         return err('INVALID_AMOUNT');
       }
 
+      const amountCents = Math.round(amount * 100);
+
       // 1. Retrieve CoreNetwork node to check ownership and get MacroAsset
       const coreNetwork = await prisma.coreNetwork.findUnique({
         where: { id: coreNetworkId },
@@ -195,13 +197,13 @@ export class SweepService {
         // Increment CoreNetwork balance
         await tx.coreNetwork.update({
           where: { id: coreNetworkId },
-          data: { balance: { increment: amount } },
+          data: { balance: { increment: amountCents } },
         });
 
         // Increment MacroAsset balance
         await tx.macroAsset.update({
           where: { id: coreNetwork.macroAssetId },
-          data: { balance: { increment: amount } },
+          data: { balance: { increment: amountCents } },
         });
 
         // Log the sweep
@@ -209,7 +211,7 @@ export class SweepService {
           data: {
             userId,
             coreNetworkId,
-            amount,
+            amount: amountCents,
             targetVault: coreNetwork.macroAsset.bankName,
             notes: notes ?? null,
             sweptAt: parsedDate,

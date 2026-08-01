@@ -52,6 +52,9 @@ export class CashFlowController {
       case 'INVALID_AMOUNT':
         res.status(400).json({ error: 'Bad Request', message: 'Amount must be greater than 0' });
         break;
+      case 'INSUFFICIENT_FUNDS':
+        res.status(400).json({ error: 'Bad Request', message: 'Insufficient balance in selected Core Network node' });
+        break;
       case 'DB_ERROR':
         res.status(500).json({ error: 'Internal Server Error', message: 'Failed to create cash flow' });
         break;

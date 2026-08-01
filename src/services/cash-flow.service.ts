@@ -34,7 +34,7 @@ export class CashFlowService {
       type: CashFlowType;
       notes?: string;
     }
-  ): Promise<Result<any, 'NETWORK_NOT_FOUND' | 'INVALID_AMOUNT' | 'DB_ERROR'>> {
+  ): Promise<Result<any, 'NETWORK_NOT_FOUND' | 'INVALID_AMOUNT' | 'INSUFFICIENT_FUNDS' | 'DB_ERROR'>> {
     try {
       logger.info(`Executing createCashFlow service for userId: ${userId}, coreNetworkId: ${data.coreNetworkId}`);
       
@@ -48,19 +48,24 @@ export class CashFlowService {
         return err('NETWORK_NOT_FOUND');
       }
 
-      // Calculate signed amount for the balance update
-      const signedAmount = data.type === 'INFLOW' ? data.amount : -data.amount;
+      const amountCents = Math.round(data.amount * 100);
 
-      // The createWithBalanceUpdate handles the transaction across CashFlow, CoreNetwork, and MacroAsset
+      // Validate sufficient balance for OUTFLOW transactions
+      if (data.type === 'OUTFLOW' && amountCents > network.balance) {
+        logger.warn(`createCashFlow failed: Outflow amount (${amountCents}) exceeds network balance (${network.balance}) for userId: ${userId}`);
+        return err('INSUFFICIENT_FUNDS');
+      }
+
+      const signedAmountCents = data.type === 'INFLOW' ? amountCents : -amountCents;
       const cashFlow = await cashFlowRepo.createWithBalanceUpdate(
         {
           userId,
           coreNetworkId: data.coreNetworkId,
-          amount: data.amount, // Raw amount is always stored as positive in CashFlow
+          amount: amountCents,
           type: data.type,
           notes: data.notes ?? null,
         },
-        signedAmount,
+        signedAmountCents,
         network.macroAssetId
       );
 

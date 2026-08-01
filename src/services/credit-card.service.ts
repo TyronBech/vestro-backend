@@ -250,7 +250,7 @@ export class CreditCardService {
         if (utilization >= DANGER_THRESHOLD * 100) {
           status = 'DANGER';
           suggestedPayment = Math.max(0, effectiveSpend - (card.creditLimit * SAFE_TARGET));
-          message = `Shield breached. Transfer ₱${suggestedPayment.toFixed(2)} from your GoTyme CC Stash to ${card.cardName} immediately to depress reported utilization back to a safe 28% level before the snapshot cut-off date.`;
+          message = `Shield breached. Transfer ₱${(suggestedPayment / 100).toFixed(2)} from your GoTyme CC Stash to ${card.cardName} immediately to depress reported utilization back to a safe 28% level before the snapshot cut-off date.`;
         } else if (utilization >= 20) {
           status = 'WARNING';
           message = `Utilization at ${utilization.toFixed(1)}%. Approaching the 30% danger zone.`;
