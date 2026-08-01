@@ -48,19 +48,17 @@ export class CashFlowService {
         return err('NETWORK_NOT_FOUND');
       }
 
-      // Calculate signed amount for the balance update
-      const signedAmount = data.type === 'INFLOW' ? data.amount : -data.amount;
-
-      // The createWithBalanceUpdate handles the transaction across CashFlow, CoreNetwork, and MacroAsset
+      const amountCents = Math.round(data.amount * 100);
+      const signedAmountCents = data.type === 'INFLOW' ? amountCents : -amountCents;
       const cashFlow = await cashFlowRepo.createWithBalanceUpdate(
         {
           userId,
           coreNetworkId: data.coreNetworkId,
-          amount: data.amount, // Raw amount is always stored as positive in CashFlow
+          amount: amountCents,
           type: data.type,
           notes: data.notes ?? null,
         },
-        signedAmount,
+        signedAmountCents,
         network.macroAssetId
       );
 

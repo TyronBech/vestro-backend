@@ -42,12 +42,18 @@ export class MacroAssetService {
   ): Promise<Result<any, 'DB_ERROR'>> {
     try {
       logger.info(`Executing addAsset service for userId: ${userId}, bankName: ${data.bankName}`);
+      
+      const balanceCents = data.balance !== undefined ? Math.round(data.balance * 100) : 0;
+      const targetGoalCents = data.targetGoal !== undefined && data.targetGoal !== null 
+        ? Math.round(data.targetGoal * 100) 
+        : null;
+
       const asset = await assetRepo.create({
         userId,
         bankName: data.bankName,
         purpose: data.purpose,
-        balance: data.balance ?? 0,
-        targetGoal: data.targetGoal ?? null,
+        balance: balanceCents,
+        targetGoal: targetGoalCents,
         iconUrl: data.iconUrl ?? null,
         colorCode: data.colorCode ?? null,
         cardBrand: data.cardBrand,
@@ -88,7 +94,15 @@ export class MacroAssetService {
         return err('NOT_FOUND');
       }
 
-      const updated = await assetRepo.update(assetId, data);
+      const updateData: any = { ...data };
+      if (data.balance !== undefined) {
+        updateData.balance = Math.round(data.balance * 100);
+      }
+      if (data.targetGoal !== undefined) {
+        updateData.targetGoal = data.targetGoal !== null ? Math.round(data.targetGoal * 100) : null;
+      }
+
+      const updated = await assetRepo.update(assetId, updateData);
       logger.info(`updateAsset service completed successfully for userId: ${userId}, assetId: ${assetId}`);
       return ok(updated);
     } catch (error) {

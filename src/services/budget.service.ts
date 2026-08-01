@@ -281,14 +281,11 @@ export class BudgetService {
         return err('CONFIG_NOT_FOUND');
       }
 
-      // Apply the allocation split
-      const needs = netPaycheck * config.needsRate;
-      const wants = netPaycheck * config.wantsRate;
-      const savings = netPaycheck * config.savingsRate;
-      const investments = netPaycheck * config.investmentsRate;
-
-      // Half of monthly rent from Needs share
-      const halfRent = config.cashAmount / 2;
+      const needs = Math.round(netPaycheck * config.needsRate);
+      const wants = Math.round(netPaycheck * config.wantsRate);
+      const savings = Math.round(netPaycheck * config.savingsRate);
+      const investments = Math.round(netPaycheck * config.investmentsRate);
+      const halfRent = Math.round(config.cashAmount / 2);
       const billsCash = needs - halfRent;
 
       if (billsCash < 0) {
